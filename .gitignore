@@ -1,0 +1,13 @@
+# IDE
+.idea/
+.vscode/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Variables
+.env
+
+# Logs
+*.log

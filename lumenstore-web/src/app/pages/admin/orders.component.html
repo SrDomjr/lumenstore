@@ -1,0 +1,60 @@
+<div class="admin-orders container">
+  <h1>Pedidos</h1>
+  <div class="filters">
+    <input type="text" placeholder="Buscar por número o cliente" [(ngModel)]="searchTerm" />
+    <select [(ngModel)]="statusFilter">
+      <option value="all">Todos</option>
+      <option value="pending">pending</option>
+      <option value="processing">processing</option>
+      <option value="shipped">shipped</option>
+      <option value="delivered">delivered</option>
+      <option value="cancelled">cancelled</option>
+    </select>
+    <label>Desde <input type="date" [(ngModel)]="startDate" /></label>
+    <label>Hasta <input type="date" [(ngModel)]="endDate" /></label>
+    <button class="btn btn-secondary" (click)="applyFilters()">Aplicar</button>
+  </div>
+
+  <div *ngIf="loading">Cargando...</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <table *ngIf="!loading && orders.length" class="orders-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Orden</th>
+        <th>Cliente</th>
+        <th>Total</th>
+        <th>Estado</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let o of orders">
+        <td>{{ o.id }}</td>
+        <td>{{ o.orderNumber }}</td>
+        <td>{{ o.customerName || o.clienteName }}</td>
+        <td>{{ o.total | number: '1.2-2' }}</td>
+        <td>{{ o.status }}</td>
+        <td class="actions">
+          <button class="btn" (click)="view(o.id)">Ver</button>
+          <select #statusSelect (change)="changeStatus(o.id, statusSelect.value)">
+            <option value="pending">pending</option>
+            <option value="processing">processing</option>
+            <option value="shipped">shipped</option>
+            <option value="delivered">delivered</option>
+            <option value="cancelled">cancelled</option>
+          </select>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!loading && !orders.length">No hay pedidos.</div>
+
+  <div class="pagination" *ngIf="!loading">
+    <button class="btn" (click)="prevPage()" [disabled]="page === 0">Anterior</button>
+    <span> Página {{ page + 1 }} </span>
+    <button class="btn" (click)="nextPage()">Siguiente</button>
+  </div>
+</div>

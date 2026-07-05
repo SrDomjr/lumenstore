@@ -1,0 +1,60 @@
+<header class="app-header">
+  <div class="container header-inner">
+    <div class="brand-wrap">
+      <a class="brand" routerLink="/store">Lumenstore</a>
+    </div>
+
+    <nav class="nav" aria-label="Main navigation">
+      <ul>
+        <li><a routerLink="/home" routerLinkActive="active">Inicio</a></li>
+        <li><a routerLink="/store" routerLinkActive="active">Tienda</a></li>
+        <li><a routerLink="/products" routerLinkActive="active">Productos</a></li>
+        <li><a routerLink="/wishlists" routerLinkActive="active">Wishlists</a></li>
+        <li><a routerLink="/orders" routerLinkActive="active">Pedidos</a></li>
+      </ul>
+    </nav>
+
+    <div class="header-actions">
+      <a routerLink="/cart" class="icon-link" aria-label="Carrito"
+        ><i class="fa-solid fa-cart-arrow-down"></i
+      ></a>
+      <a routerLink="/profile" class="btn btn-ghost">Perfil</a>
+      <a routerLink="/login" class="btn btn-primary">Ingresar</a>
+    </div>
+  </div>
+</header>
+
+<main class="app-main">
+  <div class="container">
+    <router-outlet></router-outlet>
+  </div>
+</main>
+
+<footer class="app-footer">
+  <div class="container footer-inner">
+    <div class="footer-col footer-brand">
+      <a class="brand" routerLink="/">Lumenstore</a>
+      <p class="muted">© 2026 Lumenstore · All rights reserved</p>
+    </div>
+
+    <div class="footer-col footer-links">
+      <h4>Shop</h4>
+      <a routerLink="/store">Tienda</a>
+      <a routerLink="/products">Productos</a>
+    </div>
+
+    <div class="footer-col footer-info">
+      <h4>Ayuda</h4>
+      <a routerLink="/contact">Contacto</a>
+      <a routerLink="/terms">Términos</a>
+    </div>
+
+    <div class="footer-col footer-newsletter">
+      <h4>Suscríbete</h4>
+      <form class="newsletter-form" (submit)="$event.preventDefault()">
+        <input type="email" placeholder="Tu correo" aria-label="Email" />
+        <button class="btn btn-sm btn-primary" type="submit">Enviar</button>
+      </form>
+    </div>
+  </div>
+</footer>

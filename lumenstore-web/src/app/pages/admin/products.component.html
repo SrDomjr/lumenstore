@@ -1,0 +1,33 @@
+<div class="admin-products container">
+  <div class="header-panel">
+    <div>
+      <span class="eyebrow">Catálogo</span>
+      <h1>Productos</h1>
+    </div>
+    <button class="btn btn-primary" (click)="create()">Crear producto</button>
+  </div>
+
+  <div *ngIf="loading" class="loading-panel">Cargando productos...</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <div class="products-grid" *ngIf="!loading && products.length">
+    <article *ngFor="let p of products" class="product-card">
+      <div class="product-card-copy">
+        <p class="product-label">ID {{ p.id }}</p>
+        <h2>{{ p.name || p.title || p.nombre }}</h2>
+        <p class="product-price">${{ p.price || p.basePrice | number: '1.2-2' }}</p>
+        <p class="product-status">
+          Estado: <strong>{{ p.isActive ? 'Activo' : 'Inactivo' }}</strong>
+        </p>
+      </div>
+      <div class="product-card-actions">
+        <button class="btn btn-secondary" (click)="edit(p.id)">Editar</button>
+        <button class="btn btn-danger" (click)="deleteProduct(p.id)">Eliminar</button>
+      </div>
+    </article>
+  </div>
+
+  <div *ngIf="!loading && !products.length" class="empty-state">
+    <p>No hay productos disponibles.</p>
+  </div>
+</div>

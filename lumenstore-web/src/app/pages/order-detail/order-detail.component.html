@@ -1,0 +1,12 @@
+<div class="order-detail-container">
+  <h1>Order Details</h1>
+
+  <div *ngIf="loading" class="loading">Loading...</div>
+
+  <div *ngIf="!loading && order" class="order-info">
+    <p><strong>Order Number:</strong> {{ order.orderNumber }}</p>
+    <p><strong>Status:</strong> {{ order.status }}</p>
+    <p><strong>Date:</strong> {{ order.createdAt | date }}</p>
+    <p><strong>Total:</strong> ${{ order.total | number: '1.2-2' }}</p>
+  </div>
+</div>

@@ -1,0 +1,74 @@
+.admin-orders {
+  padding: 24px;
+  background: white;
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+
+  h1 {
+    margin-bottom: 18px;
+    color: #111827;
+  }
+
+  .filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+
+    input,
+    select {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 14px;
+      background: #f9fafb;
+    }
+
+    label {
+      font-size: 14px;
+      color: #4b5563;
+    }
+
+    button.btn {
+      justify-self: start;
+    }
+  }
+
+  .orders-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+
+    thead {
+      background: var(--surface-alt);
+    }
+
+    th,
+    td {
+      padding: 16px 18px;
+      border-bottom: 1px solid #eff2f7;
+      text-align: left;
+    }
+
+    tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+  }
+
+  .pagination {
+    margin-top: 18px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+}

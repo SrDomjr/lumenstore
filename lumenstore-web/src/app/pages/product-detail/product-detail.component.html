@@ -1,0 +1,249 @@
+<div *ngIf="loading" class="loading-container">
+  <div class="spinner"></div>
+  <p>Cargando producto...</p>
+</div>
+
+<div *ngIf="!loading && !product" class="error-container">
+  <h2>Producto no encontrado</h2>
+  <p>El producto que buscas no existe o ha sido eliminado.</p>
+  <a routerLink="/products" class="btn btn-primary">Ver todos los productos</a>
+</div>
+
+<div *ngIf="!loading && product" class="product-detail">
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb">
+    <a routerLink="/">Inicio</a>
+    <span class="separator">/</span>
+    <a routerLink="/products">Productos</a>
+    <span class="separator">/</span>
+    <span class="current">{{ product.name }}</span>
+  </nav>
+
+  <div class="product-layout">
+    <!-- Image Gallery -->
+    <div class="product-gallery">
+      <div class="main-image">
+        <img
+          [src]="'https://via.placeholder.com/600x600?text=' + product.name"
+          [alt]="product.name"
+        />
+        <span *ngIf="hasDiscount" class="discount-badge">-{{ product.discount }}%</span>
+      </div>
+    </div>
+
+    <!-- Product Info -->
+    <div class="product-info">
+      <div class="product-header">
+        <p class="brand">{{ product.brandName }}</p>
+        <h1>{{ product.name }}</h1>
+        <p class="category">{{ product.categoryName }}</p>
+      </div>
+
+      <!-- Price -->
+      <div class="price-section">
+        <div class="price-row" *ngIf="!hasDiscount">
+          <span class="current-price">${{ currentPrice | number: '1.2-2' }}</span>
+        </div>
+        <div class="price-row" *ngIf="hasDiscount">
+          <span class="current-price discount">${{ discountedPrice | number: '1.2-2' }}</span>
+          <span class="original-price">${{ currentPrice | number: '1.2-2' }}</span>
+          <span class="discount-label">-{{ product.discount }}%</span>
+        </div>
+        <p *ngIf="compareAtPrice" class="compare-price">
+          Precio de referencia: ${{ compareAtPrice | number: '1.2-2' }}
+        </p>
+      </div>
+
+      <!-- Description -->
+      <p class="description">{{ product.description }}</p>
+
+      <!-- Variant Selector -->
+      <div class="variant-section" *ngIf="variants.length > 0">
+        <!-- Size Selector -->
+        <div class="variant-group" *ngIf="getUniqueSizes().length > 0">
+          <label class="variant-label">Talla</label>
+          <div class="variant-options">
+            <button
+              *ngFor="let size of getUniqueSizes()"
+              class="variant-btn"
+              [class.active]="selectedVariant?.sizeName === size"
+              (click)="selectVariant(getVariantsBySize(size)[0])"
+            >
+              {{ size }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Color Selector -->
+        <div class="variant-group" *ngIf="getUniqueColors().length > 0">
+          <label class="variant-label">Color</label>
+          <div class="variant-options">
+            <button
+              *ngFor="let color of getUniqueColors()"
+              class="color-btn"
+              [class.active]="selectedVariant?.colorName === color.colorName"
+              [style.background]="color.colorHex || '#ccc'"
+              [title]="color.colorName || 'Color'"
+              (click)="selectVariant(color)"
+            >
+              <span class="color-check" *ngIf="selectedVariant?.colorName === color.colorName"
+                >✓</span
+              >
+            </button>
+          </div>
+        </div>
+
+        <!-- Selected Variant Info -->
+        <div class="variant-info" *ngIf="selectedVariant">
+          <p class="sku">SKU: {{ selectedVariant.sku }}</p>
+          <p class="stock" [class.out-of-stock]="(selectedVariant.stock || 0) <= 0">
+            <span *ngIf="(selectedVariant.stock || 0) > 0; else outOfStock">
+              {{ selectedVariant.stock }} en stock
+            </span>
+            <ng-template #outOfStock>Agotado</ng-template>
+          </p>
+        </div>
+      </div>
+
+      <!-- Quantity & Actions -->
+      <div class="actions-section">
+        <div class="quantity-selector" *ngIf="selectedVariant && (selectedVariant.stock || 0) > 0">
+          <button (click)="quantity = quantity > 1 ? quantity - 1 : 1" class="qty-btn">−</button>
+          <span class="qty-value">{{ quantity }}</span>
+          <button (click)="quantity = quantity + 1" class="qty-btn">+</button>
+        </div>
+
+        <div class="action-buttons">
+          <button
+            class="btn btn-primary btn-add-to-cart"
+            [disabled]="!selectedVariant || (selectedVariant.stock || 0) <= 0"
+            (click)="addToCart()"
+          >
+            <span *ngIf="!addedToCart">Agregar al carrito</span>
+            <span *ngIf="addedToCart">✓ Agregado</span>
+          </button>
+          <button
+            class="btn btn-wishlist"
+            [class.active]="addedToWishlist"
+            (click)="addToWishlist()"
+            [title]="addedToWishlist ? 'En wishlist' : 'Agregar a wishlist'"
+          >
+            ♥
+          </button>
+        </div>
+      </div>
+
+      <!-- Stock Summary -->
+      <div class="stock-summary" *ngIf="variants.length > 0">
+        <p>Stock total: {{ totalStock }} unidades</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="product-tabs">
+    <div class="tab-header">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'details'"
+        (click)="activeTab = 'details'"
+      >
+        Detalles
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'reviews'"
+        (click)="activeTab = 'reviews'"
+      >
+        Reseñas ({{ reviews.length }})
+      </button>
+    </div>
+
+    <!-- Details Tab -->
+    <div class="tab-content" *ngIf="activeTab === 'details'">
+      <div class="details-grid">
+        <div class="detail-item">
+          <span class="detail-label">Marca</span>
+          <span class="detail-value">{{ product.brandName }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Categoría</span>
+          <span class="detail-value">{{ product.categoryName }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">SKU</span>
+          <span class="detail-value">{{ product.sku || 'N/A' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Descuento</span>
+          <span class="detail-value">{{
+            hasDiscount ? product.discount + '%' : 'Sin descuento'
+          }}</span>
+        </div>
+      </div>
+      <p class="full-description">{{ product.description }}</p>
+    </div>
+
+    <!-- Reviews Tab -->
+    <div class="tab-content" *ngIf="activeTab === 'reviews'">
+      <!-- Review Form -->
+      <div class="review-form" *ngIf="isAuthenticated">
+        <h3>Escribe una reseña</h3>
+        <div class="rating-selector">
+          <label>Calificación:</label>
+          <div class="stars">
+            <button
+              *ngFor="let star of [1, 2, 3, 4, 5]"
+              class="star-btn"
+              [class.active]="star <= reviewRating"
+              (click)="reviewRating = star"
+            >
+              ★
+            </button>
+          </div>
+        </div>
+        <input
+          type="text"
+          [(ngModel)]="reviewTitle"
+          placeholder="Título de la reseña"
+          class="form-input"
+        />
+        <textarea
+          [(ngModel)]="reviewComment"
+          placeholder="Escribe tu reseña..."
+          class="form-textarea"
+          rows="4"
+        ></textarea>
+        <button
+          class="btn btn-primary"
+          (click)="submitReview()"
+          [disabled]="!reviewTitle || !reviewComment"
+        >
+          Enviar reseña
+        </button>
+      </div>
+      <p *ngIf="!isAuthenticated" class="login-prompt">
+        <a routerLink="/login">Inicia sesión</a> para escribir una reseña.
+      </p>
+
+      <!-- Reviews List -->
+      <div class="reviews-list" *ngIf="reviews.length > 0; else noReviews">
+        <div class="review-card" *ngFor="let review of reviews">
+          <div class="review-header">
+            <div class="review-stars">
+              <span *ngFor="let star of [1, 2, 3, 4, 5]" [class.filled]="star <= review.rating"
+                >★</span
+              >
+            </div>
+            <span class="review-date">{{ review.createdAt | date: 'mediumDate' }}</span>
+          </div>
+          <h4>{{ review.title }}</h4>
+          <p>{{ review.comment }}</p>
+        </div>
+      </div>
+      <ng-template #noReviews>
+        <p class="no-reviews">No hay reseñas aún. ¡Sé el primero en opinar!</p>
+      </ng-template>
+    </div>
+  </div>
+</div>

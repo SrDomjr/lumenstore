@@ -1,0 +1,123 @@
+<div class="home-container">
+  <section class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow">Lumenstore</span>
+      <h1>Minimal style. Modern finds.</h1>
+      <p>Clean wardrobe essentials and everyday pieces, curated for effortless living.</p>
+      <div class="hero-actions">
+        <a routerLink="/products" class="btn btn-primary">Shop the Collection</a>
+        <a routerLink="/store" class="btn btn-secondary">Explore Store</a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-card">
+        <div class="hero-card-label">NEW</div>
+        <h2>Timeless essentials</h2>
+        <p>Discover the latest arrivals with elevated basics and sharp silhouettes.</p>
+      </div>
+    </div>
+  </section>
+
+  <div *ngIf="loading" class="home-loading">
+    <p>Cargando productos…</p>
+  </div>
+
+  <div
+    *ngIf="
+      !loading && !trendingProducts.length && !newProducts.length && !discountedProducts.length
+    "
+    class="no-products-message"
+  >
+    <p>
+      No hay productos disponibles por el momento. Intenta recargar la página o vuelve más tarde.
+    </p>
+  </div>
+
+  <section class="featured-section" *ngIf="!loading && trendingProducts.length > 0">
+    <div class="section-header">
+      <div>
+        <p class="section-subtitle">Featured</p>
+        <h2>Editor’s Picks</h2>
+      </div>
+      <a routerLink="/products" class="view-all">View all</a>
+    </div>
+
+    <div class="featured-grid">
+      <article *ngFor="let product of trendingProducts" class="featured-card">
+        <div class="image-wrap">
+          <img [src]="getProductImage(product, 520)" [alt]="product.name" />
+        </div>
+        <div class="featured-copy">
+          <p class="product-label">Best seller</p>
+          <h3>{{ product.name }}</h3>
+          <p class="price">${{ product.basePrice | number: '1.2-2' }}</p>
+          <a [routerLink]="['/products', product.id]" class="link">Shop now</a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="products-section" *ngIf="!loading && newProducts.length > 0">
+    <div class="section-header">
+      <div>
+        <p class="section-subtitle">New arrivals</p>
+        <h2>Just landed</h2>
+      </div>
+      <a routerLink="/products" class="view-all">See all</a>
+    </div>
+
+    <div class="products-grid">
+      <div *ngFor="let product of newProducts" class="product-card">
+        <div class="product-image">
+          <img [src]="getProductImage(product, 400)" [alt]="product.name" />
+        </div>
+        <div class="product-info">
+          <h3>{{ product.name }}</h3>
+          <p class="price">${{ product.basePrice | number: '1.2-2' }}</p>
+          <a [routerLink]="['/products', product.id]" class="btn btn-sm btn-secondary"
+            >View details</a
+          >
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="promo-section">
+    <div class="promo-card">
+      <h2>Seasonal offer</h2>
+      <p>Save on selected styles with clean silhouettes and comfortable fits.</p>
+      <a routerLink="/products" class="link">See offers</a>
+    </div>
+    <div class="promo-card accent">
+      <h2>Fast shipping</h2>
+      <p>Free delivery on orders above $75 and easy returns for peace of mind.</p>
+      <a routerLink="/checkout" class="link">Checkout now</a>
+    </div>
+  </section>
+
+  <section class="products-section" *ngIf="!loading && discountedProducts.length > 0">
+    <div class="section-header">
+      <div>
+        <p class="section-subtitle">On sale</p>
+        <h2>Special offers</h2>
+      </div>
+      <a routerLink="/products" class="view-all">Browse deals</a>
+    </div>
+
+    <div class="products-grid">
+      <div *ngFor="let product of discountedProducts" class="product-card">
+        <div class="product-image">
+          <img [src]="getProductImage(product, 400)" [alt]="product.name" />
+          <span *ngIf="product.discount > 0" class="discount-badge">-{{ product.discount }}%</span>
+        </div>
+        <div class="product-info">
+          <h3>{{ product.name }}</h3>
+          <p class="price">${{ product.basePrice | number: '1.2-2' }}</p>
+          <a [routerLink]="['/products', product.id]" class="btn btn-sm btn-secondary"
+            >View details</a
+          >
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,27 @@
+<div class="admin-order container">
+  <div *ngIf="loading">Cargando...</div>
+  <div *ngIf="!loading && order">
+    <h1>Pedido {{ order.orderNumber || order.id }}</h1>
+    <p><strong>Cliente:</strong> {{ order.customerName || order.clienteName }}</p>
+    <p><strong>Total:</strong> {{ order.total | number: '1.2-2' }}</p>
+    <p><strong>Estado:</strong> {{ order.status }}</p>
+
+    <div class="actions">
+      <label>Cambiar estado:</label>
+      <select #statusSel (change)="setStatus(statusSel.value)">
+        <option value="pending">pending</option>
+        <option value="processing">processing</option>
+        <option value="shipped">shipped</option>
+        <option value="delivered">delivered</option>
+        <option value="cancelled">cancelled</option>
+      </select>
+    </div>
+
+    <h3>Items</h3>
+    <ul>
+      <li *ngFor="let it of order.items">
+        {{ it.variantId }} x {{ it.quantity }} - {{ it.unitPrice | number: '1.2-2' }}
+      </li>
+    </ul>
+  </div>
+</div>

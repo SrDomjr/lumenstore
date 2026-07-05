@@ -1,0 +1,20 @@
+<div class="checkout-container">
+  <h1>Checkout</h1>
+
+  <div class="checkout-form">
+    <h2>Shipping Information</h2>
+    <p>Select a saved address or enter a new one</p>
+
+    <h2 style="margin-top: 30px">Payment Method</h2>
+    <div>
+      <label *ngFor="let method of paymentMethods">
+        <input type="radio" [(ngModel)]="selectedPayment" [value]="method" />
+        {{ method | uppercase }}
+      </label>
+    </div>
+
+    <button (click)="placeOrder()" class="btn btn-primary" style="margin-top: 30px">
+      Place Order
+    </button>
+  </div>
+</div>

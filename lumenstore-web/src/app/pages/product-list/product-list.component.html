@@ -1,0 +1,42 @@
+<div class="product-list-container">
+  <h1>Products</h1>
+
+  <div *ngIf="loading" class="loading">
+    <p>Loading products...</p>
+  </div>
+
+  <div *ngIf="!loading && products.length === 0" class="no-products">
+    <p *ngIf="!error">No products found.</p>
+    <p *ngIf="error" class="error">{{ error }}</p>
+    <button *ngIf="error" (click)="loadProducts()" class="btn">Reintentar</button>
+  </div>
+
+  <div *ngIf="!loading && products.length > 0" class="products-grid">
+    <div *ngFor="let product of products" class="product-card">
+      <div class="product-image">
+        <img
+          src="https://via.placeholder.com/300x300?text={{ product.name }}"
+          alt="{{ product.name }}"
+        />
+      </div>
+      <div class="product-info">
+        <h3>{{ product.name }}</h3>
+        <p class="description">{{ product.description | slice: 0 : 100 }}...</p>
+        <p class="price" *ngIf="getDisplayPrice(product) !== null">
+          ${{ getDisplayPrice(product) | number: '1.2-2' }}
+        </p>
+        <p class="price" *ngIf="getDisplayPrice(product) === null">Precio no disponible</p>
+        <div class="actions">
+          <a [routerLink]="['/products', product.id]" class="btn btn-secondary">View Details</a>
+          <button (click)="addToCart(product)" class="btn btn-primary">Add to Cart</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pagination" *ngIf="!loading && products.length > 0">
+    <button (click)="prevPage()" [disabled]="currentPage === 0">Anterior</button>
+    <span>Página {{ currentPage + 1 }}</span>
+    <button (click)="nextPage()">Siguiente</button>
+  </div>
+</div>

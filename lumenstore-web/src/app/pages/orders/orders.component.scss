@@ -1,0 +1,26 @@
+.orders-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 20px;
+
+  h1 {
+    font-size: 32px;
+    margin-bottom: 30px;
+    color: #333;
+  }
+
+  table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  a {
+    color: #667eea;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

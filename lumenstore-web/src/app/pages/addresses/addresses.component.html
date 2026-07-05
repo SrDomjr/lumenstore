@@ -1,0 +1,20 @@
+<div class="addresses-container">
+  <h1>My Addresses</h1>
+
+  <div *ngIf="loading" class="loading">Loading...</div>
+
+  <div *ngIf="!loading && addresses.length === 0" class="empty">
+    <p>No addresses yet. Add one to continue.</p>
+  </div>
+
+  <div *ngIf="!loading && addresses.length > 0" class="addresses">
+    <div *ngFor="let address of addresses" class="address-card">
+      <p>
+        <strong>{{ address.street }}</strong>
+      </p>
+      <p>{{ address.city }}, {{ address.state }} {{ address.postalCode }}</p>
+      <p>{{ address.country }}</p>
+      <button (click)="deleteAddress(address.id)" class="btn btn-danger">Delete</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,16 @@
+<div class="wishlists-container">
+  <h1>My Wishlists</h1>
+
+  <div *ngIf="loading" class="loading">Loading...</div>
+
+  <div *ngIf="!loading && wishlists.length === 0" class="empty">
+    <p>No wishlists yet. Create one to save your favorite products!</p>
+  </div>
+
+  <div *ngIf="!loading && wishlists.length > 0" class="wishlists">
+    <div *ngFor="let wishlist of wishlists" class="wishlist-card">
+      <h3>{{ wishlist.name }}</h3>
+      <p>{{ wishlist.items?.length || 0 }} items</p>
+    </div>
+  </div>
+</div>

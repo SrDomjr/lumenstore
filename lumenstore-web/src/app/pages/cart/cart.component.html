@@ -1,0 +1,47 @@
+<div class="cart-container">
+  <h1>Shopping Cart</h1>
+
+  <div *ngIf="!cart || cart.items.length === 0" class="empty-cart">
+    <p>Your cart is empty</p>
+    <a routerLink="/products" class="btn btn-primary">Continue Shopping</a>
+  </div>
+
+  <div *ngIf="cart && cart.items.length > 0" class="cart-content">
+    <div class="cart-items">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Total</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of cart.items">
+            <td>Item {{ item.variantId }}</td>
+            <td>
+              <input
+                type="number"
+                [value]="item.quantity"
+                (change)="updateQuantity(item.id, $any($event).target.valueAsNumber || 0)"
+              />
+            </td>
+            <td>$0.00</td>
+            <td>$0.00</td>
+            <td>
+              <button (click)="removeItem(item.id)" class="btn btn-danger">Remove</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cart-summary">
+      <h3>Order Summary</h3>
+      <p>Total: $0.00</p>
+      <button (click)="checkout()" class="btn btn-primary">Proceed to Checkout</button>
+    </div>
+  </div>
+</div>

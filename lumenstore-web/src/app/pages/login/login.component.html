@@ -1,0 +1,57 @@
+<div class="login-container">
+  <div class="login-card">
+    <h1>Login</h1>
+    <p class="subtitle">Welcome back to Lumenstore</p>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input
+          type="text"
+          id="username"
+          formControlName="username"
+          class="form-control"
+          [class.is-invalid]="submitted && f['username']?.invalid"
+          placeholder="Enter your username"
+        />
+        <div *ngIf="submitted && f['username']?.invalid" class="error-message">
+          <div *ngIf="f['username']?.errors?.['required']">Username is required</div>
+          <div *ngIf="f['username']?.errors?.['minlength']">
+            Username must be at least 4 characters
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          formControlName="password"
+          class="form-control"
+          [class.is-invalid]="submitted && f['password']?.invalid"
+          placeholder="Enter your password"
+        />
+        <div *ngIf="submitted && f['password']?.invalid" class="error-message">
+          <div *ngIf="f['password']?.errors?.['required']">Password is required</div>
+          <div *ngIf="f['password']?.errors?.['minlength']">
+            Password must be at least 6 characters
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="error" class="alert alert-danger">
+        {{ error }}
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100" [disabled]="loading">
+        <span *ngIf="!loading">Sign In</span>
+        <span *ngIf="loading">Loading...</span>
+      </button>
+    </form>
+
+    <div class="login-footer">
+      <p>Don't have an account? <a routerLink="/register">Create one</a></p>
+    </div>
+  </div>
+</div>

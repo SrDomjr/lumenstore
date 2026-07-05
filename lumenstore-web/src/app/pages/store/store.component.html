@@ -1,0 +1,164 @@
+<div class="store-container">
+  <aside class="filters">
+    <div class="filter-panel">
+      <p class="eyebrow">Filtrar:</p>
+    </div>
+
+    <div class="filter-row single">
+      <label>
+        Precio
+        <select [(ngModel)]="priceRange" (change)="loadProducts()">
+          <option value="">Cualquier precio</option>
+          <option value="0-50">$0 - $50</option>
+          <option value="50-150">$50 - $150</option>
+          <option value="150-500">$150+</option>
+          <option value="500+">$500+</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="filter-group collapsible">
+      <button
+        class="toggle-header"
+        type="button"
+        (click)="toggleCategoryFilters()"
+        aria-expanded="{{ showCategoryFilters }}"
+      >
+        <span>Categorías</span>
+        <span class="toggle-icon" [class.expanded]="showCategoryFilters">&#9662;</span>
+      </button>
+      <ul *ngIf="showCategoryFilters">
+        <li [class.active]="!selectedCategory" (click)="selectedCategory = null; loadProducts()">
+          Todas
+        </li>
+        <li
+          *ngFor="let c of categories"
+          [class.active]="selectedCategory === c.id"
+          (click)="selectedCategory = c.id; loadProducts()"
+        >
+          {{ c.name }}
+        </li>
+      </ul>
+    </div>
+
+    <div class="filter-group collapsible">
+      <button
+        class="toggle-header"
+        type="button"
+        (click)="toggleBrandFilters()"
+        aria-expanded="{{ showBrandFilters }}"
+      >
+        <span>Marcas</span>
+        <span class="toggle-icon" [class.expanded]="showBrandFilters">&#9662;</span>
+      </button>
+      <ul *ngIf="showBrandFilters">
+        <li [class.active]="!selectedBrand" (click)="selectedBrand = null; loadProducts()">
+          Todas
+        </li>
+        <li
+          *ngFor="let b of brands"
+          [class.active]="selectedBrand === b.id"
+          (click)="selectedBrand = b.id; loadProducts()"
+        >
+          {{ b.name }}
+        </li>
+      </ul>
+    </div>
+
+    <div class="filter-group collapsible">
+      <button
+        class="toggle-header"
+        type="button"
+        (click)="toggleColorFilters()"
+        aria-expanded="{{ showColorFilters }}"
+      >
+        <span>Colores</span>
+        <span class="toggle-icon" [class.expanded]="showColorFilters">&#9662;</span>
+      </button>
+      <ul *ngIf="showColorFilters">
+        <li [class.active]="!selectedColor" (click)="selectedColor = null; loadProducts()">
+          Todas
+        </li>
+        <li
+          *ngFor="let color of colors"
+          [class.active]="selectedColor === color"
+          (click)="selectedColor = color; loadProducts()"
+        >
+          {{ color }}
+        </li>
+      </ul>
+    </div>
+
+    <div class="filter-group collapsible">
+      <button
+        class="toggle-header"
+        type="button"
+        (click)="toggleSizeFilters()"
+        aria-expanded="{{ showSizeFilters }}"
+      >
+        <span>Tallas</span>
+        <span class="toggle-icon" [class.expanded]="showSizeFilters">&#9662;</span>
+      </button>
+      <ul *ngIf="showSizeFilters">
+        <li [class.active]="!selectedSize" (click)="selectedSize = null; loadProducts()">Todas</li>
+        <li
+          *ngFor="let size of sizes"
+          [class.active]="selectedSize === size"
+          (click)="selectedSize = size; loadProducts()"
+        >
+          {{ size }}
+        </li>
+      </ul>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-ghost" (click)="clearFilters()">Limpiar</button>
+    </div>
+  </aside>
+
+  <main class="products">
+    <header class="store-header">
+      <div>
+        <p class="eyebrow">Tienda</p>
+        <h2>Disponible ahora</h2>
+      </div>
+      <div class="meta">
+        <span>{{ products.length }} productos</span>
+      </div>
+    </header>
+
+    <div *ngIf="loading" class="loading">Cargando productos...</div>
+    <div *ngIf="error" class="error">{{ error }}</div>
+
+    <div class="grid" *ngIf="!loading && products.length">
+      <article class="card" *ngFor="let p of products">
+        <div class="img">
+          <img src="https://via.placeholder.com/320x320?text={{ p.name }}" alt="{{ p.name }}" />
+        </div>
+        <div class="info">
+          <p class="card-tag">Nuevo</p>
+          <h3>{{ p.name }}</h3>
+          <p class="desc">{{ p.description | slice: 0 : 100 }}...</p>
+          <div class="card-footer">
+            <span class="price"
+              >${{ p.price || p.basePrice || (p.variants && p.variants[0]?.price) || 'N/A' }}</span
+            >
+            <button class="btn btn-primary" (click)="addToCart(p)">Agregar</button>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div *ngIf="!loading && products.length === 0" class="no-results">
+      No se encontraron productos.
+    </div>
+
+    <div class="pagination" *ngIf="!loading && products.length">
+      <button class="btn btn-ghost" (click)="prevPage()" [disabled]="currentPage === 0">
+        Anterior
+      </button>
+      <span>Página {{ currentPage + 1 }}</span>
+      <button class="btn btn-ghost" (click)="nextPage()">Siguiente</button>
+    </div>
+  </main>
+</div>
