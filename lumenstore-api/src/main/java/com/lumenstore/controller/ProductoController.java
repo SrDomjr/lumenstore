@@ -1,10 +1,12 @@
 package com.lumenstore.controller;
 
 
+import com.lumenstore.dto.ProductoRequestDTO;
 import com.lumenstore.dto.ProductoResponseDTO;
 import com.lumenstore.dto.ProductVariantResponseDTO;
 import com.lumenstore.services.ProductoService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,8 +26,13 @@ public class ProductoController {
     // GET /api/v1/products?page=0&size=10
     @GetMapping
     public ResponseEntity<Page<ProductoResponseDTO>> getAllProducts(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long brandId,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) java.math.BigDecimal minPrice,
+            @RequestParam(required = false) java.math.BigDecimal maxPrice,
             @PageableDefault(size = 12) Pageable pageable) {
-        return ResponseEntity.ok(productService.getProducts(pageable));
+        return ResponseEntity.ok(productService.getProducts(pageable, categoryId, brandId, q, minPrice, maxPrice));
     }
 
     // GET /api/v1/products/category/5
@@ -68,5 +75,28 @@ public class ProductoController {
     public ResponseEntity<List<ProductVariantResponseDTO>> getProductVariants(
             @PathVariable Long productId) {
         return ResponseEntity.ok(productService.getProductVariants(productId));
+    }
+
+    // ========== ADMIN CRUD ==========
+
+    // POST /api/v1/products
+    @PostMapping
+    public ResponseEntity<ProductoResponseDTO> createProduct(@Valid @RequestBody ProductoRequestDTO request) {
+        return ResponseEntity.ok(productService.createProduct(request));
+    }
+
+    // PUT /api/v1/products/5
+    @PutMapping("/{id}")
+    public ResponseEntity<ProductoResponseDTO> updateProduct(
+            @PathVariable Long id,
+            @Valid @RequestBody ProductoRequestDTO request) {
+        return ResponseEntity.ok(productService.updateProduct(id, request));
+    }
+
+    // DELETE /api/v1/products/5
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        productService.deleteProduct(id);
+        return ResponseEntity.noContent().build();
     }
 }

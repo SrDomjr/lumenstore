@@ -22,5 +22,6 @@ public class ProductoResponseDTO {
     private Integer stock;
     private Integer discount;
     private Boolean featured;
+    private Boolean isActive;
     private List<String> images;
 }

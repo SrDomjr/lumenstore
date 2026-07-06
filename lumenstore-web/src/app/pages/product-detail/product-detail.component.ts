@@ -26,11 +26,12 @@ export class ProductDetailComponent implements OnInit {
   reviews: ProductReview[] = [];
   loading = false;
   selectedVariant: ProductVariantResponseDTO | null = null;
+  selectedImage: string | null = null;
   quantity = 1;
   addedToCart = false;
   addedToWishlist = false;
   isAuthenticated = false;
-  activeTab: 'details' | 'reviews' | 'questions' = 'details';
+  activeTab: 'details' | 'reviews' = 'details';
 
   // Review form
   reviewRating = 5;
@@ -50,28 +51,56 @@ export class ProductDetailComponent implements OnInit {
   ngOnInit() {
     this.isAuthenticated = this.authService.isAuthenticated();
     this.route.params.subscribe((params) => {
-      const id = params['id'];
-      if (id) {
-        this.loadProduct(id);
+      const param = params['id'] ?? params['slug'];
+      if (param) {
+        this.loadProduct(param);
       }
     });
   }
-
-  loadProduct(id: number) {
+  loadProduct(idOrSlug: string | number) {
     this.loading = true;
-    this.productService.getProductById(id).subscribe(
+
+    const tryLoadById = (id: number) => {
+      this.productService.getProductById(id).subscribe(
+        (product) => {
+          this.onProductLoaded(product);
+        },
+        (err) => {
+          console.warn('getProductById failed, error:', err);
+          this.loading = false;
+          this.cdr.detectChanges();
+        },
+      );
+    };
+
+    if (typeof idOrSlug === 'number' || !isNaN(Number(idOrSlug))) {
+      tryLoadById(Number(idOrSlug));
+      return;
+    }
+
+    // Otherwise try by slug
+    this.productService.getProductBySlug(String(idOrSlug)).subscribe(
       (product) => {
-        this.product = product;
-        this.loadVariants(id);
-        this.loadReviews(id);
-        this.loading = false;
-        this.cdr.detectChanges();
+        this.onProductLoaded(product);
       },
-      () => {
+      (err) => {
+        console.warn('getProductBySlug failed, error:', err);
         this.loading = false;
         this.cdr.detectChanges();
       },
     );
+  }
+
+  private onProductLoaded(product: ProductoResponseDTO) {
+    this.product = product;
+    const pid = product.id;
+    this.selectedImage = product.images?.length ? product.images[0] : null;
+    if (pid) {
+      this.loadVariants(pid);
+      this.loadReviews(pid);
+    }
+    this.loading = false;
+    this.cdr.detectChanges();
   }
 
   loadVariants(productId: number) {
@@ -132,7 +161,51 @@ export class ProductDetailComponent implements OnInit {
   }
 
   get totalStock(): number {
-    return this.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+    if (this.variants.length > 0) {
+      return this.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+    }
+    return this.product?.stock || 0;
+  }
+
+  get displayImage(): string {
+    if (this.selectedImage) {
+      return this.selectedImage;
+    }
+    if (this.product?.images?.length) {
+      return this.product.images[0];
+    }
+    return `https://via.placeholder.com/600x600?text=${encodeURIComponent(this.product?.name || 'Producto')}`;
+  }
+
+  get ratingStars(): number[] {
+    return [1, 2, 3, 4, 5];
+  }
+
+  get reviewCount(): number {
+    return this.reviews.length;
+  }
+
+  get averageRating(): number {
+    if (!this.reviews.length) {
+      return 0;
+    }
+    const total = this.reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
+    return total / this.reviews.length;
+  }
+
+  get roundedRating(): number {
+    return Math.round(this.averageRating);
+  }
+
+  get availability(): string {
+    if (this.selectedVariant) {
+      return (this.selectedVariant.stock || 0) > 0 ? 'En stock' : 'Agotado';
+    }
+    return (this.product?.stock || 0) > 0 ? 'En stock' : 'Agotado';
+  }
+
+  selectImage(imageUrl: string) {
+    this.selectedImage = imageUrl;
   }
 
   get hasDiscount(): boolean {

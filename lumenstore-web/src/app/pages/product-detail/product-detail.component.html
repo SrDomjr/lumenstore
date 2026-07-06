@@ -6,7 +6,7 @@
 <div *ngIf="!loading && !product" class="error-container">
   <h2>Producto no encontrado</h2>
   <p>El producto que buscas no existe o ha sido eliminado.</p>
-  <a routerLink="/products" class="btn btn-primary">Ver todos los productos</a>
+  <a routerLink="/store" class="btn btn-primary">Ver todos los productos</a>
 </div>
 
 <div *ngIf="!loading && product" class="product-detail">
@@ -14,7 +14,7 @@
   <nav class="breadcrumb">
     <a routerLink="/">Inicio</a>
     <span class="separator">/</span>
-    <a routerLink="/products">Productos</a>
+    <a routerLink="/store">Productos</a>
     <span class="separator">/</span>
     <span class="current">{{ product.name }}</span>
   </nav>
@@ -23,11 +23,20 @@
     <!-- Image Gallery -->
     <div class="product-gallery">
       <div class="main-image">
-        <img
-          [src]="'https://via.placeholder.com/600x600?text=' + product.name"
-          [alt]="product.name"
-        />
+        <img [src]="displayImage" [alt]="product.name" />
         <span *ngIf="hasDiscount" class="discount-badge">-{{ product.discount }}%</span>
+      </div>
+
+      <div class="image-thumbnails" *ngIf="product.images.length > 1">
+        <button
+          type="button"
+          class="thumbnail"
+          *ngFor="let image of product.images"
+          [class.selected]="displayImage === image"
+          (click)="selectImage(image)"
+        >
+          <img [src]="image" [alt]="product.name" />
+        </button>
       </div>
     </div>
 
@@ -37,20 +46,33 @@
         <p class="brand">{{ product.brandName }}</p>
         <h1>{{ product.name }}</h1>
         <p class="category">{{ product.categoryName }}</p>
+        <p *ngIf="product.shortDescription" class="product-summary">
+          {{ product.shortDescription }}
+        </p>
+        <span *ngIf="product.featured" class="product-badge">Destacado</span>
+      </div>
+
+      <div class="rating-summary" *ngIf="reviewCount > 0">
+        <div class="stars">
+          <span *ngFor="let star of ratingStars" [class.filled]="star <= roundedRating">★</span>
+        </div>
+        <span class="rating-value"
+          >{{ averageRating | number: '1.1-1' }} · {{ reviewCount }} reseñas</span
+        >
       </div>
 
       <!-- Price -->
       <div class="price-section">
         <div class="price-row" *ngIf="!hasDiscount">
-          <span class="current-price">${{ currentPrice | number: '1.2-2' }}</span>
+          <span class="current-price">S/. {{ currentPrice | number: '1.2-2' }}</span>
         </div>
         <div class="price-row" *ngIf="hasDiscount">
-          <span class="current-price discount">${{ discountedPrice | number: '1.2-2' }}</span>
-          <span class="original-price">${{ currentPrice | number: '1.2-2' }}</span>
+          <span class="current-price discount">S/. {{ discountedPrice | number: '1.2-2' }}</span>
+          <span class="original-price">S/. {{ currentPrice | number: '1.2-2' }}</span>
           <span class="discount-label">-{{ product.discount }}%</span>
         </div>
         <p *ngIf="compareAtPrice" class="compare-price">
-          Precio de referencia: ${{ compareAtPrice | number: '1.2-2' }}
+          Precio de referencia: S/. {{ compareAtPrice | number: '1.2-2' }}
         </p>
       </div>
 
@@ -173,6 +195,18 @@
         <div class="detail-item">
           <span class="detail-label">SKU</span>
           <span class="detail-value">{{ product.sku || 'N/A' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Disponibilidad</span>
+          <span class="detail-value">{{ availability }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Stock total</span>
+          <span class="detail-value">{{ totalStock }} unidades</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Envío</span>
+          <span class="detail-value">Entrega 3-5 días hábiles</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">Descuento</span>

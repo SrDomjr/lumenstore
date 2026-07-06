@@ -23,7 +23,7 @@ public class CarritoItem {
 
     // Apunta a la variante específica (Producto + Talla/Color)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_variant_id", nullable = false)
+    @JoinColumn(name = "variant_id", nullable = false)
     private ProductVariant productVariant;
 
     @Column(nullable = false)

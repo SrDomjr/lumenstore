@@ -1,6 +1,8 @@
 package com.lumenstore.controller;
 
 import com.lumenstore.dto.CarritoItemRequestDTO;
+import com.lumenstore.dto.CarritoItemUpdateDTO;
+import com.lumenstore.dto.CarritoResponseDTO;
 import com.lumenstore.models.Carrito;
 import com.lumenstore.models.CarritoItem;
 import com.lumenstore.models.Usuario;
@@ -31,7 +33,6 @@ public class CarritoController {
             @PathVariable Long clientId,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        // Validar que el usuario autenticado coincide con clientId (o se puede ampliar para roles de admin)
         Optional<Usuario> usuarioOpt = usuarioRepository.findById(clientId);
         if (usuarioOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -42,12 +43,8 @@ public class CarritoController {
             return ResponseEntity.status(403).body("Forbidden");
         }
 
-        Carrito carrito = carritoRepository.findByUserId(clientId).orElseGet(() -> {
-            Carrito newCart = Carrito.builder().user(usuario).build();
-            return carritoRepository.save(newCart);
-        });
-
-        return ResponseEntity.ok(carrito);
+        CarritoResponseDTO response = carritoService.getCart(clientId);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/cliente/{clientId}/items")
@@ -66,15 +63,15 @@ public class CarritoController {
             return ResponseEntity.status(403).body("Forbidden");
         }
 
-        Carrito carrito = carritoService.addProductToCart(userDetails.getUsername(), request);
-        return ResponseEntity.ok(carrito);
+        CarritoResponseDTO response = carritoService.addProductToCart(userDetails.getUsername(), request);
+        return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/cliente/{clientId}/items/{itemId}")
     public ResponseEntity<?> updateItem(
             @PathVariable Long clientId,
             @PathVariable Long itemId,
-            @RequestBody CarritoItemRequestDTO request,
+            @RequestBody CarritoItemUpdateDTO request,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         Optional<Usuario> usuarioOpt = usuarioRepository.findById(clientId);
@@ -96,7 +93,8 @@ public class CarritoController {
         item.setQuantity(request.getQuantity());
         carritoItemRepository.save(item);
 
-        return ResponseEntity.ok(item);
+        CarritoResponseDTO response = carritoService.getCart(clientId);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/cliente/{clientId}/items/{itemId}")
@@ -126,7 +124,8 @@ public class CarritoController {
         cart.getItems().removeIf(i -> i.getId().equals(itemId));
         carritoRepository.save(cart);
 
-        return ResponseEntity.noContent().build();
+        CarritoResponseDTO response = carritoService.getCart(clientId);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/cliente/{clientId}")
@@ -149,6 +148,7 @@ public class CarritoController {
         cart.getItems().clear();
         carritoRepository.save(cart);
 
-        return ResponseEntity.noContent().build();
+        CarritoResponseDTO response = carritoService.getCart(clientId);
+        return ResponseEntity.ok(response);
     }
 }

@@ -1,9 +1,9 @@
 <div class="cart-container">
-  <h1>Shopping Cart</h1>
+  <h1>Carrito de Compras</h1>
 
   <div *ngIf="!cart || cart.items.length === 0" class="empty-cart">
-    <p>Your cart is empty</p>
-    <a routerLink="/products" class="btn btn-primary">Continue Shopping</a>
+    <p>Tu carrito está vacío</p>
+    <a routerLink="/store" class="btn btn-primary">Seguir comprando</a>
   </div>
 
   <div *ngIf="cart && cart.items.length > 0" class="cart-content">
@@ -11,27 +11,42 @@
       <table>
         <thead>
           <tr>
-            <th>Product</th>
-            <th>Quantity</th>
-            <th>Price</th>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio</th>
             <th>Total</th>
-            <th>Action</th>
+            <th>Acción</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let item of cart.items">
-            <td>Item {{ item.variantId }}</td>
+            <td class="product-cell">
+              <img
+                *ngIf="item.imageUrl"
+                [src]="item.imageUrl"
+                alt="{{ item.productName }}"
+                class="product-image"
+              />
+              <div class="product-info">
+                <p class="product-name">{{ item.productName }}</p>
+                <p class="product-variant" *ngIf="item.color || item.size">
+                  <span *ngIf="item.color">Color: {{ item.color }}</span>
+                  <span *ngIf="item.size" class="ml-2">Talla: {{ item.size }}</span>
+                </p>
+              </div>
+            </td>
             <td>
               <input
                 type="number"
                 [value]="item.quantity"
                 (change)="updateQuantity(item.id, $any($event).target.valueAsNumber || 0)"
+                min="1"
               />
             </td>
-            <td>$0.00</td>
-            <td>$0.00</td>
+            <td>S/. {{ item.price | number: '1.2-2' }}</td>
+            <td>S/. {{ item.quantity * item.price | number: '1.2-2' }}</td>
             <td>
-              <button (click)="removeItem(item.id)" class="btn btn-danger">Remove</button>
+              <button (click)="removeItem(item.id)" class="btn btn-danger">Eliminar</button>
             </td>
           </tr>
         </tbody>
@@ -39,9 +54,20 @@
     </div>
 
     <div class="cart-summary">
-      <h3>Order Summary</h3>
-      <p>Total: $0.00</p>
-      <button (click)="checkout()" class="btn btn-primary">Proceed to Checkout</button>
+      <h3>Resumen del Pedido</h3>
+      <div class="summary-line">
+        <span>Subtotal:</span>
+        <span>S/. {{ getSubtotal() | number: '1.2-2' }}</span>
+      </div>
+      <div class="summary-line">
+        <span>Envío:</span>
+        <span>S/. 0.00</span>
+      </div>
+      <div class="summary-line total">
+        <span>Total:</span>
+        <span>S/. {{ getSubtotal() | number: '1.2-2' }}</span>
+      </div>
+      <button (click)="checkout()" class="btn btn-primary">Ir a pagar</button>
     </div>
   </div>
 </div>

@@ -6,11 +6,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.lumenstore.dto.ProductoRequestDTO;
 import com.lumenstore.dto.ProductoResponseDTO;
 import com.lumenstore.dto.ProductVariantResponseDTO;
+import com.lumenstore.models.Categoria;
+import com.lumenstore.models.Descuento;
+import com.lumenstore.models.Marca;
 import com.lumenstore.models.Producto;
 import com.lumenstore.models.ProductVariant;
-import com.lumenstore.models.Descuento;
+import com.lumenstore.repository.ICategoriaRepository;
+import com.lumenstore.repository.IMarcaRepository;
 import com.lumenstore.repository.IProductoRepository;
 import com.lumenstore.repository.IProductVariantRepository;
 
@@ -24,11 +29,20 @@ public class ProductoServiceImpl implements ProductoService {
 
     private final IProductoRepository productoRepository;
     private final IProductVariantRepository productVariantRepository;
+    private final IMarcaRepository marcaRepository;
+    private final ICategoriaRepository categoriaRepository;
 
     @Override
     @Transactional(readOnly = true)
     public Page<ProductoResponseDTO> getProducts(Pageable pageable) {
         return productoRepository.findByIsActiveTrue(pageable)
+                .map(this::convertToDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ProductoResponseDTO> getProducts(Pageable pageable, Long categoryId, Long brandId, String query, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice) {
+        return productoRepository.findByFilters(categoryId, brandId, query, minPrice, maxPrice, pageable)
                 .map(this::convertToDTO);
     }
 
@@ -91,6 +105,114 @@ public class ProductoServiceImpl implements ProductoService {
                 .toList();
     }
 
+    @Override
+    @Transactional
+    public ProductoResponseDTO createProduct(ProductoRequestDTO request) {
+        Marca brand = null;
+        if (request.getBrandId() != null) {
+            brand = marcaRepository.findById(request.getBrandId())
+                    .orElseThrow(() -> new RuntimeException("Marca no encontrada con id: " + request.getBrandId()));
+        }
+
+        Categoria category = null;
+        if (request.getCategoryId() != null) {
+            category = categoriaRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Categoría no encontrada con id: " + request.getCategoryId()));
+        }
+
+        String slug = request.getSlug();
+        if (slug == null || slug.isBlank()) {
+            slug = request.getName().toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
+        }
+
+        Producto product = Producto.builder()
+                .name(request.getName())
+                .slug(slug)
+                .description(request.getDescription())
+                .shortDescription(request.getShortDescription())
+                .sku(request.getSku())
+                .brand(brand)
+                .category(category)
+                .isActive(request.getIsActive() != null ? request.getIsActive() : true)
+                .featured(request.getFeatured() != null ? request.getFeatured() : false)
+                .build();
+
+        product = productoRepository.save(product);
+
+        // Create a default variant if basePrice or stock is provided
+        if (request.getBasePrice() != null || request.getStock() != null) {
+            ProductVariant variant = ProductVariant.builder()
+                    .product(product)
+                    .price(request.getBasePrice() != null ? request.getBasePrice() : BigDecimal.ZERO)
+                    .stock(request.getStock() != null ? request.getStock() : 0)
+                    .isActive(true)
+                    .build();
+            productVariantRepository.save(variant);
+        }
+
+        return convertToDTO(product);
+    }
+
+    @Override
+    @Transactional
+    public ProductoResponseDTO updateProduct(Long id, ProductoRequestDTO request) {
+        Producto product = productoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado con id: " + id));
+
+        if (request.getName() != null) product.setName(request.getName());
+        if (request.getSlug() != null) product.setSlug(request.getSlug());
+        if (request.getDescription() != null) product.setDescription(request.getDescription());
+        if (request.getShortDescription() != null) product.setShortDescription(request.getShortDescription());
+        if (request.getSku() != null) product.setSku(request.getSku());
+        if (request.getIsActive() != null) product.setIsActive(request.getIsActive());
+        if (request.getFeatured() != null) product.setFeatured(request.getFeatured());
+
+        if (request.getBrandId() != null) {
+            Marca brand = marcaRepository.findById(request.getBrandId())
+                    .orElseThrow(() -> new RuntimeException("Marca no encontrada con id: " + request.getBrandId()));
+            product.setBrand(brand);
+        }
+
+        if (request.getCategoryId() != null) {
+            Categoria category = categoriaRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Categoría no encontrada con id: " + request.getCategoryId()));
+            product.setCategory(category);
+        }
+
+        product = productoRepository.save(product);
+
+        // Update price/stock on first variant if provided
+        if (request.getBasePrice() != null || request.getStock() != null) {
+            List<ProductVariant> variants = productVariantRepository.findByProductIdAndIsActiveTrue(product.getId());
+            if (!variants.isEmpty()) {
+                ProductVariant variant = variants.get(0);
+                if (request.getBasePrice() != null) variant.setPrice(request.getBasePrice());
+                if (request.getStock() != null) variant.setStock(request.getStock());
+                productVariantRepository.save(variant);
+            } else {
+                // Create default variant if none exists
+                ProductVariant variant = ProductVariant.builder()
+                        .product(product)
+                        .price(request.getBasePrice() != null ? request.getBasePrice() : BigDecimal.ZERO)
+                        .stock(request.getStock() != null ? request.getStock() : 0)
+                        .isActive(true)
+                        .build();
+                productVariantRepository.save(variant);
+            }
+        }
+
+        return convertToDTO(product);
+    }
+
+    @Override
+    @Transactional
+    public void deleteProduct(Long id) {
+        Producto product = productoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado con id: " + id));
+        product.setIsActive(false); // Soft delete
+        productoRepository.save(product);
+    }
+
     private ProductVariantResponseDTO convertVariantToDTO(ProductVariant variant) {
         return ProductVariantResponseDTO.builder()
                 .id(variant.getId())
@@ -119,21 +241,6 @@ public class ProductoServiceImpl implements ProductoService {
             stock = firstVariant.getStock() != null ? firstVariant.getStock() : 0;
         }
 
-        // Calculate max discount percentage
-        Integer discount = 0;
-        if (product.getDiscounts() != null && !product.getDiscounts().isEmpty()) {
-            discount = product.getDiscounts().stream()
-                    .filter(d -> Boolean.TRUE.equals(d.getIsActive()))
-                    .map(d -> {
-                        if (d.getDiscountType() == Descuento.DiscountType.percentage) {
-                            return d.getValue().intValue();
-                        }
-                        return 0;
-                    })
-                    .max(Integer::compareTo)
-                    .orElse(0);
-        }
-
         return ProductoResponseDTO.builder()
                 .id(product.getId())
                 .name(product.getName())
@@ -145,8 +252,9 @@ public class ProductoServiceImpl implements ProductoService {
                 .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
                 .basePrice(basePrice)
                 .stock(stock)
-                .discount(discount)
+                .discount(0)
                 .featured(product.getFeatured() != null ? product.getFeatured() : false)
+                .isActive(product.getIsActive() != null ? product.getIsActive() : true)
                 .images(Collections.emptyList())
                 .build();
     }

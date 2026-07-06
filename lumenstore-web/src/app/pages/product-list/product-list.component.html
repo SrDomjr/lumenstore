@@ -23,11 +23,11 @@
         <h3>{{ product.name }}</h3>
         <p class="description">{{ product.description | slice: 0 : 100 }}...</p>
         <p class="price" *ngIf="getDisplayPrice(product) !== null">
-          ${{ getDisplayPrice(product) | number: '1.2-2' }}
+          S/. {{ getDisplayPrice(product) | number: '1.2-2' }}
         </p>
         <p class="price" *ngIf="getDisplayPrice(product) === null">Precio no disponible</p>
         <div class="actions">
-          <a [routerLink]="['/products', product.id]" class="btn btn-secondary">View Details</a>
+          <a [routerLink]="['/store', product.id]" class="btn btn-secondary">View Details</a>
           <button (click)="addToCart(product)" class="btn btn-primary">Add to Cart</button>
         </div>
       </div>

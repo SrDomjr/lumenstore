@@ -26,6 +26,15 @@ export class CartComponent implements OnInit {
       this.cart = cart;
       this.cdr.detectChanges();
     });
+    // Load cart if user is logged in
+    this.cartService.loadCart();
+  }
+
+  getSubtotal(): number {
+    if (!this.cart || !this.cart.items) return 0;
+    return this.cart.items.reduce((total, item) => {
+      return total + item.quantity * (item.price || 0);
+    }, 0);
   }
 
   updateQuantity(itemId: number, quantity: number) {

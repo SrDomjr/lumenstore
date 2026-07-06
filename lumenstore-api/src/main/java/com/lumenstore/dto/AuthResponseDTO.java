@@ -1,6 +1,7 @@
 package com.lumenstore.dto;
 
 import lombok.*;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -14,4 +15,5 @@ public class AuthResponseDTO {
     private String firstName;
     private String lastName;
     private String refreshToken;
+    private List<String> roles;
 }

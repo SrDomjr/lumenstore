@@ -206,8 +206,12 @@ export interface Carrito {
 
 export interface CarritoItem {
   id: number;
-  carritoId: number;
   variantId: number;
+  productName: string;
+  price: number;
+  imageUrl: string;
+  color?: string;
+  size?: string;
   quantity: number;
   addedAt: string;
 }

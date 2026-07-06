@@ -8,18 +8,43 @@
       <ul>
         <li><a routerLink="/home" routerLinkActive="active">Inicio</a></li>
         <li><a routerLink="/store" routerLinkActive="active">Tienda</a></li>
-        <li><a routerLink="/products" routerLinkActive="active">Productos</a></li>
-        <li><a routerLink="/wishlists" routerLinkActive="active">Wishlists</a></li>
         <li><a routerLink="/orders" routerLinkActive="active">Pedidos</a></li>
       </ul>
     </nav>
 
     <div class="header-actions">
-      <a routerLink="/cart" class="icon-link" aria-label="Carrito"
-        ><i class="fa-solid fa-cart-arrow-down"></i
-      ></a>
-      <a routerLink="/profile" class="btn btn-ghost">Perfil</a>
-      <a routerLink="/login" class="btn btn-primary">Ingresar</a>
+      <a routerLink="/cart" class="icon-link cart-link" aria-label="Carrito">
+        <i class="fa-solid fa-cart-arrow-down"></i>
+        <span class="cart-badge" *ngIf="cartCount > 0">{{ cartCount }}</span>
+      </a>
+      <a routerLink="/wishlists" class="icon-link heart-link" aria-label="Favoritos">
+        <i class="fa-regular fa-heart"></i>
+      </a>
+      <ng-container *ngIf="auth.currentUser$ | async as user; else guestActions">
+        <div class="profile-dropdown" tabindex="0">
+          <button class="profile-btn btn-ghost" aria-haspopup="true" aria-expanded="false">
+            <i class="fa-regular fa-user"></i>
+            <span class="profile-name">{{ user.firstName }}</span>
+            <i class="fa-solid fa-caret-down caret"></i>
+          </button>
+          <ul class="dropdown-menu" role="menu">
+            <li role="none"><a role="menuitem" routerLink="/profile">Mi perfil</a></li>
+            <li role="none"><a role="menuitem" routerLink="/wishlists">Favoritos</a></li>
+            <li role="none"><a role="menuitem" routerLink="/orders">Pedidos</a></li>
+            <li role="none" *ngIf="isAdmin()">
+              <a role="menuitem" routerLink="/admin">⚙️ Admin</a>
+            </li>
+            <li class="divider" role="separator"></li>
+            <li role="none">
+              <button role="menuitem" class="btn-ghost" (click)="onLogout()">Cerrar sesión</button>
+            </li>
+          </ul>
+        </div>
+      </ng-container>
+      <ng-template #guestActions>
+        <a routerLink="/profile" class="btn btn-ghost"><i class="fa-regular fa-user"></i></a>
+        <a routerLink="/login" class="btn btn-primary">Ingresar</a>
+      </ng-template>
     </div>
   </div>
 </header>
@@ -40,7 +65,7 @@
     <div class="footer-col footer-links">
       <h4>Shop</h4>
       <a routerLink="/store">Tienda</a>
-      <a routerLink="/products">Productos</a>
+      <a routerLink="/store">Tienda</a>
     </div>
 
     <div class="footer-col footer-info">

@@ -24,6 +24,13 @@ public class WishlistController {
         return ResponseEntity.status(HttpStatus.CREATED).body(wishlist);
     }
 
+    @GetMapping("/default")
+    public ResponseEntity<WishlistResponseDTO> getDefaultWishlist(
+            @PathVariable Long customerId) {
+        WishlistResponseDTO wishlist = wishlistService.getDefaultWishlist(customerId);
+        return ResponseEntity.ok(wishlist);
+    }
+
     @GetMapping("/{wishlistId}")
     public ResponseEntity<WishlistResponseDTO> getWishlist(
             @PathVariable Long customerId,

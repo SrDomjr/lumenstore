@@ -16,12 +16,35 @@ import {
   providedIn: 'root',
 })
 export class ProductService extends ApiService {
-  getProducts(page: number = 0, size: number = 10): Observable<any> {
-    return this.get<any>(`/products?page=${page}&size=${size}`);
+  getProducts(filters: any = {}, page: number = 0, size: number = 10): Observable<any> {
+    const params: string[] = [];
+    if (filters.categoryId) {
+      params.push(`categoryId=${filters.categoryId}`);
+    }
+    if (filters.brandId) {
+      params.push(`brandId=${filters.brandId}`);
+    }
+    if (filters.query) {
+      params.push(`q=${encodeURIComponent(filters.query)}`);
+    }
+    if (filters.minPrice != null) {
+      params.push(`minPrice=${filters.minPrice}`);
+    }
+    if (filters.maxPrice != null) {
+      params.push(`maxPrice=${filters.maxPrice}`);
+    }
+    params.push(`page=${page}`);
+    params.push(`size=${size}`);
+    const queryString = params.length ? `?${params.join('&')}` : '';
+    return this.get<any>(`/products${queryString}`);
   }
 
   getProductById(id: number): Observable<ProductoResponseDTO> {
     return this.get<ProductoResponseDTO>(`/products/${id}`);
+  }
+
+  getProductBySlug(slug: string): Observable<ProductoResponseDTO> {
+    return this.get<ProductoResponseDTO>(`/products/slug/${encodeURIComponent(slug)}`);
   }
 
   searchProducts(query: string): Observable<Producto[]> {

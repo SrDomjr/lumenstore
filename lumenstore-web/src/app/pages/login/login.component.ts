@@ -7,7 +7,7 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { LoginRequest } from '../../models';
 
@@ -28,6 +28,7 @@ export class LoginComponent implements OnInit {
     private formBuilder: FormBuilder,
     private router: Router,
     private authService: AuthService,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit() {
@@ -56,7 +57,8 @@ export class LoginComponent implements OnInit {
 
     this.authService.login(credentials).subscribe(
       () => {
-        this.router.navigate(['/home']);
+        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/home';
+        this.router.navigateByUrl(returnUrl);
       },
       (error) => {
         this.error = error.error?.message || 'Login failed. Please try again.';

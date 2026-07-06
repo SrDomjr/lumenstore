@@ -56,10 +56,24 @@ export class AuthService extends ApiService {
   }
 
   logout(): void {
+    // Clear local state immediately
+    const token = this.getToken();
     localStorage.removeItem('token');
     localStorage.removeItem('currentUser');
     this.tokenSubject.next(null);
     this.currentUserSubject.next(null);
+
+    // Notify server to clear session (best-effort, do not block)
+    try {
+      this.post('/auth/logout', {}).subscribe({ next: () => {}, error: () => {} });
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  // Returns observable to allow waiting for server to confirm logout if needed
+  logoutServer(): Observable<any> {
+    return this.post('/auth/logout', {});
   }
 
   getToken(): string | null {

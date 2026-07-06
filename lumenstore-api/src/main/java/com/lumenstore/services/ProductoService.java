@@ -7,10 +7,13 @@ import org.springframework.data.domain.Pageable;
 
 import com.lumenstore.dto.ProductoResponseDTO;
 import com.lumenstore.dto.ProductVariantResponseDTO;
+import com.lumenstore.dto.ProductoRequestDTO;
 
 public interface ProductoService {
     // Obtener todos los productos activos con paginación
     Page<ProductoResponseDTO> getProducts(Pageable pageable);
+
+    Page<ProductoResponseDTO> getProducts(Pageable pageable, Long categoryId, Long brandId, String query, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice);
     
     // Obtener productos filtrados por categoría con paginación
     Page<ProductoResponseDTO> getProductsByCategory(Long categoryId, Pageable pageable);
@@ -28,4 +31,9 @@ public interface ProductoService {
 
     // Variantes de un producto
     List<ProductVariantResponseDTO> getProductVariants(Long productId);
+
+    // CRUD de productos (admin)
+    ProductoResponseDTO createProduct(ProductoRequestDTO request);
+    ProductoResponseDTO updateProduct(Long id, ProductoRequestDTO request);
+    void deleteProduct(Long id);
 }

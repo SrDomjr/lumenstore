@@ -4,17 +4,18 @@ import com.lumenstore.models.Wishlist;
 import com.lumenstore.models.WishlistItem;
 import com.lumenstore.models.Cliente;
 import com.lumenstore.models.Producto;
+import com.lumenstore.models.Usuario;
 import com.lumenstore.repository.IWishlistRepository;
 import com.lumenstore.repository.IWishlistItemRepository;
 import com.lumenstore.repository.IClienteRepository;
 import com.lumenstore.repository.IProductoRepository;
+import com.lumenstore.repository.IUsuarioRepository;
 import com.lumenstore.dto.WishlistResponseDTO;
 import com.lumenstore.dto.WishlistRequestDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
-import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -24,11 +25,11 @@ public class WishlistService {
     private final IWishlistItemRepository wishlistItemRepository;
     private final IClienteRepository clienteRepository;
     private final IProductoRepository productoRepository;
+    private final IUsuarioRepository usuarioRepository;
 
     @Transactional
-    public Wishlist createWishlist(Long customerId, WishlistRequestDTO request) {
-        Cliente cliente = clienteRepository.findById(customerId)
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+    public Wishlist createWishlist(Long userId, WishlistRequestDTO request) {
+        Cliente cliente = getClienteByUserId(userId);
 
         Wishlist wishlist = Wishlist.builder()
                 .customer(cliente)
@@ -39,9 +40,30 @@ public class WishlistService {
         return wishlistRepository.save(wishlist);
     }
 
+    private Cliente getClienteByUserId(Long userId) {
+        Usuario usuario = usuarioRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        return clienteRepository.findByUser(usuario)
+                .orElseThrow(() -> new RuntimeException("Cliente no encontrado para el usuario"));
+    }
+
     @Transactional(readOnly = true)
-    public WishlistResponseDTO getWishlistById(Long customerId, Long wishlistId) {
-        Wishlist wishlist = wishlistRepository.findByCustomerIdAndId(customerId, wishlistId)
+    public WishlistResponseDTO getDefaultWishlist(Long userId) {
+        Cliente cliente = getClienteByUserId(userId);
+        Wishlist wishlist = wishlistRepository.findByCustomerIdAndIsDefaultTrue(cliente.getId())
+                .orElse(null);
+
+        if (wishlist == null) return null;
+
+        int itemCount = wishlistItemRepository.findByWishlistId(wishlist.getId()).size();
+
+        return mapToDTO(wishlist, itemCount);
+    }
+
+    @Transactional(readOnly = true)
+    public WishlistResponseDTO getWishlistById(Long userId, Long wishlistId) {
+        Cliente cliente = getClienteByUserId(userId);
+        Wishlist wishlist = wishlistRepository.findByCustomerIdAndId(cliente.getId(), wishlistId)
                 .orElseThrow(() -> new RuntimeException("Lista de deseos no encontrada"));
 
         int itemCount = wishlistItemRepository.findByWishlistId(wishlistId).size();
@@ -50,8 +72,9 @@ public class WishlistService {
     }
 
     @Transactional
-    public void addProductToWishlist(Long customerId, Long wishlistId, Long productId) {
-        Wishlist wishlist = wishlistRepository.findByCustomerIdAndId(customerId, wishlistId)
+    public void addProductToWishlist(Long userId, Long wishlistId, Long productId) {
+        Cliente cliente = getClienteByUserId(userId);
+        Wishlist wishlist = wishlistRepository.findByCustomerIdAndId(cliente.getId(), wishlistId)
                 .orElseThrow(() -> new RuntimeException("Lista de deseos no encontrada"));
 
         Producto producto = productoRepository.findById(productId)
@@ -71,8 +94,9 @@ public class WishlistService {
     }
 
     @Transactional
-    public void removeProductFromWishlist(Long customerId, Long wishlistId, Long productId) {
-        Wishlist wishlist = wishlistRepository.findByCustomerIdAndId(customerId, wishlistId)
+    public void removeProductFromWishlist(Long userId, Long wishlistId, Long productId) {
+        Cliente cliente = getClienteByUserId(userId);
+        Wishlist wishlist = wishlistRepository.findByCustomerIdAndId(cliente.getId(), wishlistId)
                 .orElseThrow(() -> new RuntimeException("Lista de deseos no encontrada"));
 
         WishlistItem item = wishlistItemRepository.findByWishlistIdAndProductId(wishlistId, productId)

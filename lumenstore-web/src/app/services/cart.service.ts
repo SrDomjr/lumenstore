@@ -63,29 +63,40 @@ export class CartService extends ApiService implements OnDestroy {
     );
   }
 
-  addToCart(clientId: number, item: CarritoItemRequestDTO): Observable<CarritoItem> {
-    return this.post<CarritoItem>(`/carrito/cliente/${clientId}/items`, item).pipe(
-      tap(() => this.loadCart()),
+  addToCart(clientId: number, item: CarritoItemRequestDTO): Observable<Carrito> {
+    return this.post<Carrito>(`/carrito/cliente/${clientId}/items`, item).pipe(
+      tap((cart) => {
+        this.cartSubject.next(cart);
+        this.updateCartCount(cart);
+      }),
     );
   }
 
-  updateCartItem(clientId: number, itemId: number, quantity: number): Observable<CarritoItem> {
-    return this.patch<CarritoItem>(`/carrito/cliente/${clientId}/items/${itemId}`, {
+  updateCartItem(clientId: number, itemId: number, quantity: number): Observable<Carrito> {
+    return this.patch<Carrito>(`/carrito/cliente/${clientId}/items/${itemId}`, {
       quantity,
-    }).pipe(tap(() => this.loadCart()));
-  }
-
-  removeFromCart(clientId: number, itemId: number): Observable<void> {
-    return this.delete<void>(`/carrito/cliente/${clientId}/items/${itemId}`).pipe(
-      tap(() => this.loadCart()),
+    }).pipe(
+      tap((cart) => {
+        this.cartSubject.next(cart);
+        this.updateCartCount(cart);
+      }),
     );
   }
 
-  clearCart(clientId: number): Observable<void> {
-    return this.delete<void>(`/carrito/cliente/${clientId}`).pipe(
-      tap(() => {
-        this.cartSubject.next(null);
-        this.cartCountSubject.next(0);
+  removeFromCart(clientId: number, itemId: number): Observable<Carrito> {
+    return this.delete<Carrito>(`/carrito/cliente/${clientId}/items/${itemId}`).pipe(
+      tap((cart) => {
+        this.cartSubject.next(cart);
+        this.updateCartCount(cart);
+      }),
+    );
+  }
+
+  clearCart(clientId: number): Observable<Carrito> {
+    return this.delete<Carrito>(`/carrito/cliente/${clientId}`).pipe(
+      tap((cart) => {
+        this.cartSubject.next(cart);
+        this.updateCartCount(cart);
       }),
     );
   }
@@ -97,9 +108,8 @@ export class CartService extends ApiService implements OnDestroy {
   getCartTotal(): number {
     const cart = this.cartSubject.value;
     if (!cart) return 0;
-
     return cart.items.reduce((total, item) => {
-      return total + item.quantity * this.getItemPrice(item);
+      return total + item.quantity * (item.price || 0);
     }, 0);
   }
 
@@ -110,11 +120,6 @@ export class CartService extends ApiService implements OnDestroy {
   private updateCartCount(cart: Carrito): void {
     const count = cart.items ? cart.items.reduce((total, item) => total + item.quantity, 0) : 0;
     this.cartCountSubject.next(count);
-  }
-
-  private getItemPrice(item: CarritoItem): number {
-    // This would be retrieved from product service
-    return 0;
   }
 
   private getClientId(): number | null {

@@ -1,11 +1,5 @@
 -- =============================================
--- LUMENSTORE DATABASE SCHEMA
--- Character Set: utf8mb4
--- Collation: utf8mb4_unicode_ci
--- =============================================
-
--- =============================================
--- 1. AUTENTICACIÓN Y AUTORIZACIÓN
+-- 1. SEGURIDAD (Security)
 -- =============================================
 
 CREATE TABLE roles (
@@ -258,7 +252,7 @@ CREATE TABLE inventory_movements (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     variant_id BIGINT NOT NULL,
     quantity INT NOT NULL,
-    movement_type ENUM('purchase', 'sale', 'returned', 'adjustment', 'damage') NOT NULL,
+    movement_type ENUM('purchase', 'sale', 'return', 'adjustment', 'damage') NOT NULL,
     reference_id BIGINT NULL,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -402,27 +396,8 @@ CREATE TABLE shipments (
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- =============================================
--- 7. EXPERIENCIA CLIENTE (Customer Experience)
+-- 7. CARRITO Y FAVORITOS (Cart & Wishlist)
 -- =============================================
-
-CREATE TABLE carts (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-CREATE TABLE cart_items (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    cart_id BIGINT NOT NULL,
-    product_variant_id BIGINT NOT NULL,
-    quantity INT NOT NULL DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (cart_id) REFERENCES carts(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_variant_id) REFERENCES product_variants(id)
-) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE shopping_carts (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -431,6 +406,17 @@ CREATE TABLE shopping_carts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE cart_items (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    cart_id BIGINT NOT NULL,
+    variant_id BIGINT NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (cart_id) REFERENCES shopping_carts(id) ON DELETE CASCADE,
+    FOREIGN KEY (variant_id) REFERENCES product_variants(id)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE wishlists (
@@ -462,7 +448,7 @@ CREATE TABLE product_comparisons (
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- =============================================
--- 8. ADMINISTRACIÓN (Administration)
+-- 8. ADMINISTRACIÓN
 -- =============================================
 
 CREATE TABLE settings (
@@ -500,7 +486,7 @@ CREATE TABLE audit_logs (
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- =============================================
--- ÍNDICES ADICIONALES para mejor rendimiento
+-- ÍNDICES ADICIONALES
 -- =============================================
 
 CREATE INDEX idx_products_category ON products(category_id);
@@ -511,6 +497,3 @@ CREATE INDEX idx_sales_status ON sales(status);
 CREATE INDEX idx_cart_items_cart ON cart_items(cart_id);
 CREATE INDEX idx_product_reviews_product ON product_reviews(product_id);
 CREATE INDEX idx_login_history_user ON login_history(user_id);
-CREATE INDEX idx_shopping_carts_customer ON shopping_carts(customer_id);
-CREATE INDEX idx_addresses_customer ON addresses(customer_id);
-CREATE INDEX idx_discounts_active ON discounts(is_active);

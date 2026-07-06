@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "carts")
+@Table(name = "shopping_carts")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,10 +19,12 @@ public class Carrito {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Relación uno a uno con el Usuario
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JoinColumn(name = "customer_id", nullable = true, unique = true)
     private Usuario user;
+
+    @Column(name = "session_id", length = 100)
+    private String sessionId;
 
     // Lista de productos dentro del carrito
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)

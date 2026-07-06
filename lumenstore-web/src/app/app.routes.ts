@@ -28,15 +28,14 @@ export const routes: Routes = [
   },
   {
     path: 'products',
-    loadComponent: () =>
-      import('./pages/product-list/product-list.component').then((m) => m.ProductListComponent),
+    redirectTo: 'store',
   },
   {
     path: 'store',
     loadComponent: () => import('./pages/store/store.component').then((m) => m.StoreComponent),
   },
   {
-    path: 'products/:id',
+    path: 'store/:id',
     loadComponent: () =>
       import('./pages/product-detail/product-detail.component').then(
         (m) => m.ProductDetailComponent,

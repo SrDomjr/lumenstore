@@ -22,7 +22,7 @@
         <tr *ngFor="let order of orders">
           <td>{{ order.orderNumber }}</td>
           <td>{{ order.createdAt | date }}</td>
-          <td>${{ order.total | number: '1.2-2' }}</td>
+          <td>S/. {{ order.total | number: '1.2-2' }}</td>
           <td>{{ order.status }}</td>
           <td><a [routerLink]="['/orders', order.id]">View</a></td>
         </tr>

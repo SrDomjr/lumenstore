@@ -26,7 +26,7 @@ export class AdminProductsComponent implements OnInit {
 
   load() {
     this.loading = true;
-    this.productService.getProducts(0, 100).subscribe(
+    this.productService.getProducts({}, 0, 100).subscribe(
       (resp: any) => {
         this.products = resp?.content || resp || [];
         this.loading = false;

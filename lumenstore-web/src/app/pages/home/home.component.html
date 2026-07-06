@@ -5,7 +5,7 @@
       <h1>Minimal style. Modern finds.</h1>
       <p>Clean wardrobe essentials and everyday pieces, curated for effortless living.</p>
       <div class="hero-actions">
-        <a routerLink="/products" class="btn btn-primary">Shop the Collection</a>
+        <a routerLink="/store" class="btn btn-primary">Shop the Collection</a>
         <a routerLink="/store" class="btn btn-secondary">Explore Store</a>
       </div>
     </div>
@@ -39,7 +39,7 @@
         <p class="section-subtitle">Featured</p>
         <h2>Editor’s Picks</h2>
       </div>
-      <a routerLink="/products" class="view-all">View all</a>
+      <a routerLink="/store" class="view-all">View all</a>
     </div>
 
     <div class="featured-grid">
@@ -50,8 +50,8 @@
         <div class="featured-copy">
           <p class="product-label">Best seller</p>
           <h3>{{ product.name }}</h3>
-          <p class="price">${{ product.basePrice | number: '1.2-2' }}</p>
-          <a [routerLink]="['/products', product.id]" class="link">Shop now</a>
+          <p class="price">S/. {{ product.basePrice | number: '1.2-2' }}</p>
+          <a [routerLink]="['/store', product.id]" class="link">Shop now</a>
         </div>
       </article>
     </div>
@@ -63,7 +63,7 @@
         <p class="section-subtitle">New arrivals</p>
         <h2>Just landed</h2>
       </div>
-      <a routerLink="/products" class="view-all">See all</a>
+      <a routerLink="/store" class="view-all">See all</a>
     </div>
 
     <div class="products-grid">
@@ -73,10 +73,8 @@
         </div>
         <div class="product-info">
           <h3>{{ product.name }}</h3>
-          <p class="price">${{ product.basePrice | number: '1.2-2' }}</p>
-          <a [routerLink]="['/products', product.id]" class="btn btn-sm btn-secondary"
-            >View details</a
-          >
+          <p class="price">S/. {{ product.basePrice | number: '1.2-2' }}</p>
+          <a [routerLink]="['/store', product.id]" class="btn btn-sm btn-secondary">View details</a>
         </div>
       </div>
     </div>
@@ -86,7 +84,7 @@
     <div class="promo-card">
       <h2>Seasonal offer</h2>
       <p>Save on selected styles with clean silhouettes and comfortable fits.</p>
-      <a routerLink="/products" class="link">See offers</a>
+      <a routerLink="/store" class="link">See offers</a>
     </div>
     <div class="promo-card accent">
       <h2>Fast shipping</h2>
@@ -101,7 +99,7 @@
         <p class="section-subtitle">On sale</p>
         <h2>Special offers</h2>
       </div>
-      <a routerLink="/products" class="view-all">Browse deals</a>
+      <a routerLink="/store" class="view-all">Browse deals</a>
     </div>
 
     <div class="products-grid">
@@ -112,10 +110,8 @@
         </div>
         <div class="product-info">
           <h3>{{ product.name }}</h3>
-          <p class="price">${{ product.basePrice | number: '1.2-2' }}</p>
-          <a [routerLink]="['/products', product.id]" class="btn btn-sm btn-secondary"
-            >View details</a
-          >
+          <p class="price">S/. {{ product.basePrice | number: '1.2-2' }}</p>
+          <a [routerLink]="['/store', product.id]" class="btn btn-sm btn-secondary">View details</a>
         </div>
       </div>
     </div>
