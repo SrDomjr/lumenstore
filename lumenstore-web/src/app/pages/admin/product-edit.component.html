@@ -3,13 +3,18 @@
     <div>
       <span class="eyebrow">Catálogo</span>
       <h1 *ngIf="isNew">Crear producto</h1>
-      <h1 *ngIf="!isNew">Editar producto #{{ productId }}</h1>
+      <h1 *ngIf="!isNew && productId">
+        Editar producto #{{ productId }}<span *ngIf="productName">: {{ productName }}</span>
+      </h1>
     </div>
   </div>
 
   <div *ngIf="loading" class="loading-panel">Cargando...</div>
 
   <form [formGroup]="form" (ngSubmit)="save()" *ngIf="!loading" class="edit-form">
+    <!-- ─── Basic Info ─────────────────────────────────────── -->
+    <div class="section-title">Información básica</div>
+
     <div class="form-row">
       <div class="form-group flex-2">
         <label>Nombre del producto *</label>
@@ -18,13 +23,29 @@
           class="form-control"
           placeholder="Ej: Zapatillas Running Pro"
         />
-        <small class="text-danger" *ngIf="form.get('name')?.invalid && form.get('name')?.touched"
+        <small class="field-error" *ngIf="form.get('name')?.invalid && form.get('name')?.touched"
           >El nombre es obligatorio</small
         >
       </div>
-      <div class="form-group flex-1">
-        <label>Slug (URL)</label>
-        <input formControlName="slug" class="form-control" placeholder="zapatillas-running-pro" />
+      <div class="form-group flex-1 slug-group">
+        <label>
+          Slug (URL)
+          <button
+            type="button"
+            class="slug-lock-btn"
+            (click)="toggleSlugLock()"
+            [title]="slugLocked ? 'Desbloquear slug' : 'Bloquear slug'"
+          >
+            <span *ngIf="slugLocked">🔒</span>
+            <span *ngIf="!slugLocked">🔓</span>
+          </button>
+        </label>
+        <input
+          formControlName="slug"
+          class="form-control"
+          placeholder="zapatillas-running-pro"
+          (input)="onSlugInput()"
+        />
       </div>
     </div>
 
@@ -33,54 +54,89 @@
         <label>SKU</label>
         <input formControlName="sku" class="form-control" placeholder="ZAP-RUN-001" />
       </div>
-      <div class="form-group flex-1">
-        <label>Marca</label>
-        <select formControlName="brandId" class="form-control">
-          <option [value]="null">Seleccionar marca</option>
-          <option *ngFor="let b of brands" [value]="b.id">{{ b.name }}</option>
-        </select>
+      <div class="form-group flex-1 combo-group">
+        <label>
+          Marca *
+          <button
+            type="button"
+            class="quick-add-btn"
+            (click)="openQuickCreate('brand')"
+            title="Crear nueva marca"
+          >
+            +
+          </button>
+        </label>
+        <div class="combo-wrapper">
+          <input
+            class="form-control combo-input"
+            placeholder="Buscar marca..."
+            [(ngModel)]="brandSearch"
+            [ngModelOptions]="{ standalone: true }"
+            (focus)="onBrandFocus()"
+            (blur)="hideBrandDropdown()"
+          />
+          <button *ngIf="brandSearch" type="button" class="combo-clear" (click)="clearBrand()">
+            ×
+          </button>
+          <div class="combo-dropdown" *ngIf="showBrandDropdown">
+            <div
+              *ngFor="let b of filteredBrands"
+              class="combo-option"
+              [class.selected]="form.value.brandId === b.id"
+              (mousedown)="selectBrand(b)"
+            >
+              {{ b.name }}
+            </div>
+            <div *ngIf="filteredBrands.length === 0" class="combo-empty">Sin resultados</div>
+          </div>
+        </div>
       </div>
-      <div class="form-group flex-1">
-        <label>Categoría</label>
-        <select formControlName="categoryId" class="form-control">
-          <option [value]="null">Seleccionar categoría</option>
-          <option *ngFor="let c of categories" [value]="c.id">{{ c.name }}</option>
-        </select>
+      <div class="form-group flex-1 combo-group">
+        <label>
+          Categoría *
+          <button
+            type="button"
+            class="quick-add-btn"
+            (click)="openQuickCreate('category')"
+            title="Crear nueva categoría"
+          >
+            +
+          </button>
+        </label>
+        <div class="combo-wrapper">
+          <input
+            class="form-control combo-input"
+            placeholder="Buscar categoría..."
+            [(ngModel)]="categorySearch"
+            [ngModelOptions]="{ standalone: true }"
+            (focus)="onCategoryFocus()"
+            (blur)="hideCategoryDropdown()"
+          />
+          <button
+            *ngIf="categorySearch"
+            type="button"
+            class="combo-clear"
+            (click)="clearCategory()"
+          >
+            ×
+          </button>
+          <div class="combo-dropdown" *ngIf="showCategoryDropdown">
+            <div
+              *ngFor="let c of filteredCategories"
+              class="combo-option"
+              [class.selected]="form.value.categoryId === c.id"
+              (mousedown)="selectCategory(c)"
+            >
+              {{ c.name }}
+            </div>
+            <div *ngIf="filteredCategories.length === 0" class="combo-empty">Sin resultados</div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="form-row">
-      <div class="form-group flex-1">
-        <label>Precio base *</label>
-        <input
-          type="number"
-          step="0.01"
-          formControlName="basePrice"
-          class="form-control"
-          placeholder="0.00"
-        />
-        <small
-          class="text-danger"
-          *ngIf="form.get('basePrice')?.invalid && form.get('basePrice')?.touched"
-          >El precio es obligatorio</small
-        >
-      </div>
-      <div class="form-group flex-1">
-        <label>Stock</label>
-        <input type="number" formControlName="stock" class="form-control" placeholder="0" />
-      </div>
-      <div class="form-group flex-1">
-        <label>Descuento (%)</label>
-        <input
-          type="number"
-          formControlName="discount"
-          class="form-control"
-          placeholder="0"
-          min="0"
-          max="100"
-        />
-      </div>
-    </div>
+    <!-- ─── Description ────────────────────────────────────── -->
+    <div class="section-title">Descripción</div>
 
     <div class="form-group">
       <label>Descripción corta</label>
@@ -101,6 +157,222 @@
       ></textarea>
     </div>
 
+    <!-- ─── Variants Matrix ────────────────────────────────── -->
+    <div class="section-title">Configurar variantes (Colores × Tallas)</div>
+
+    <div class="variant-selector-row">
+      <div class="variant-selector">
+        <label>
+          Colores
+          <button
+            type="button"
+            class="quick-add-btn quick-add-btn-sm"
+            (click)="openQuickCreate('color')"
+            title="Crear nuevo color"
+          >
+            +
+          </button>
+        </label>
+        <div class="chip-group">
+          <button
+            *ngFor="let c of colors"
+            type="button"
+            class="chip"
+            [class.chip-active]="selectedColorIds.has(c.id)"
+            (click)="toggleColorInMatrix(c.id)"
+          >
+            <span class="chip-color" [style.background]="c.hexCode || '#000'"></span>
+            {{ c.name }}
+          </button>
+          <div *ngIf="colors.length === 0" class="chip-empty">No hay colores registrados</div>
+        </div>
+      </div>
+      <div class="variant-selector">
+        <label>
+          Tallas
+          <button
+            type="button"
+            class="quick-add-btn quick-add-btn-sm"
+            (click)="openQuickCreate('size')"
+            title="Crear nueva talla"
+          >
+            +
+          </button>
+        </label>
+        <div class="chip-group">
+          <button
+            *ngFor="let s of sizes"
+            type="button"
+            class="chip"
+            [class.chip-active]="selectedSizeIds.has(s.id)"
+            (click)="toggleSizeInMatrix(s.id)"
+          >
+            {{ s.name }}
+          </button>
+          <div *ngIf="sizes.length === 0" class="chip-empty">No hay tallas registradas</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generated Matrix Table -->
+    <div class="section-title">Matriz de variantes</div>
+
+    <div class="variant-matrix-wrap" *ngIf="variantMatrix.length > 0">
+      <table class="variant-matrix-table">
+        <thead>
+          <tr>
+            <th>Variante</th>
+            <th>SKU</th>
+            <th>Precio</th>
+            <th>Precio comparativo</th>
+            <th>Stock</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of variantMatrix; let i = index">
+            <td class="vm-cell-label">
+              <span
+                class="variant-color-dot"
+                *ngIf="row.colorHex"
+                [style.background]="row.colorHex"
+              ></span>
+              <span class="vm-label-text">
+                <ng-container *ngIf="row.colorName">{{ row.colorName }}</ng-container>
+                <ng-container *ngIf="row.colorName && row.sizeName"> / </ng-container>
+                <ng-container *ngIf="row.sizeName">{{ row.sizeName }}</ng-container>
+                <ng-container *ngIf="!row.colorName && !row.sizeName">Variante única</ng-container>
+              </span>
+            </td>
+            <td>
+              <input
+                class="vm-input"
+                [(ngModel)]="row.sku"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="SKU"
+              />
+            </td>
+            <td>
+              <input
+                class="vm-input vm-input-price"
+                type="text"
+                inputmode="decimal"
+                [(ngModel)]="row.price"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="0.00"
+              />
+            </td>
+            <td>
+              <input
+                class="vm-input vm-input-price"
+                type="text"
+                inputmode="decimal"
+                [(ngModel)]="row.compareAtPrice"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="0.00"
+              />
+            </td>
+            <td>
+              <input
+                class="vm-input vm-input-stock"
+                type="text"
+                inputmode="numeric"
+                [(ngModel)]="row.stock"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="0"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="matrix-hint">
+        Los valores se guardarán como variantes al crear/actualizar el producto.
+      </p>
+    </div>
+
+    <div *ngIf="variantMatrix.length === 0" class="empty-variants">
+      <p>Selecciona colores y/o tallas arriba para generar la matriz de variantes.</p>
+    </div>
+
+    <!-- ─── Images ─────────────────────────────────────────── -->
+    <div class="section-title">Imágenes</div>
+
+    <div
+      class="images-dropzone"
+      [class.drag-over]="dragOver"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+      (click)="triggerFileInput()"
+    >
+      <input
+        #fileInput
+        type="file"
+        accept="image/*"
+        multiple
+        style="display: none"
+        (change)="onFileSelected($event)"
+      />
+      <div class="dropzone-content" *ngIf="images.length === 0">
+        <span class="dropzone-icon">📷</span>
+        <p>Arrastra imágenes aquí o haz clic para seleccionar</p>
+      </div>
+      <div class="dropzone-content" *ngIf="images.length > 0">
+        <span class="dropzone-icon">📷</span>
+        <p class="dropzone-text">Arrastra más imágenes o haz clic para agregar</p>
+      </div>
+    </div>
+
+    <div class="images-grid" *ngIf="images.length > 0">
+      <div class="image-card" *ngFor="let img of images">
+        <img [src]="img.imageUrl" [alt]="img.altText || 'Imagen del producto'" />
+        <div class="image-overlay">
+          <button
+            type="button"
+            class="img-btn img-main-btn"
+            [class.is-main]="img.isMain"
+            (click)="setMainImage(img.id)"
+            [title]="img.isMain ? 'Imagen principal' : 'Marcar como principal'"
+          >
+            ★
+          </button>
+          <button
+            type="button"
+            class="img-btn img-delete-btn"
+            (click)="removeImage(img.id)"
+            title="Eliminar imagen"
+          >
+            ×
+          </button>
+        </div>
+        <div class="image-badge" *ngIf="img.isMain">Principal</div>
+      </div>
+    </div>
+
+    <!-- ─── Tags ───────────────────────────────────────────── -->
+    <div class="section-title">Etiquetas</div>
+
+    <div class="form-group">
+      <label>Etiquetas (escribe y presiona Enter o coma)</label>
+      <input
+        #tagInput
+        class="form-control"
+        [(ngModel)]="tagInputValue"
+        [ngModelOptions]="{ standalone: true }"
+        placeholder="Ej: Verano, Running, Oferta"
+        (keydown)="onTagKeydown($event)"
+        (blur)="onTagBlur($event)"
+      />
+      <div class="tags-display" *ngIf="tags.length > 0">
+        <span class="tag-chip" *ngFor="let tag of tags; let i = index">
+          {{ tag }}
+          <button type="button" class="tag-remove" (click)="removeTag(i)">×</button>
+        </span>
+      </div>
+    </div>
+
+    <!-- ─── Status ─────────────────────────────────────────── -->
+    <div class="section-title">Estado</div>
+
     <div class="form-row checkboxes">
       <label class="checkbox-label">
         <input type="checkbox" formControlName="isActive" />
@@ -112,11 +384,21 @@
       </label>
     </div>
 
+    <!-- ─── Actions ────────────────────────────────────────── -->
     <div class="actions">
-      <button class="btn btn-primary" type="submit" [disabled]="form.invalid">
-        {{ isNew ? 'Crear producto' : 'Guardar cambios' }}
+      <button class="btn btn-primary" type="submit" [disabled]="form.invalid || saving">
+        <span *ngIf="saving">Guardando...</span>
+        <span *ngIf="!saving">{{ isNew ? 'Crear producto' : 'Guardar cambios' }}</span>
       </button>
-      <a class="btn btn-ghost" routerLink="/admin/products">Cancelar</a>
+      <a class="btn btn-ghost" routerLink="/admin/catalog/products">Cancelar</a>
     </div>
   </form>
 </div>
+
+<!-- ─── Quick Create Modal ───────────────────────────────── -->
+<app-quick-create-modal
+  [visible]="showQuickModal"
+  [type]="quickModalType"
+  (created)="onQuickCreated($event)"
+  (cancelled)="onQuickCancelled()"
+></app-quick-create-modal>

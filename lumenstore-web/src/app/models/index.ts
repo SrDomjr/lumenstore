@@ -209,6 +209,7 @@ export interface CarritoItem {
   variantId: number;
   productName: string;
   price: number;
+  compareAtPrice?: number;
   imageUrl: string;
   color?: string;
   size?: string;

@@ -1,7 +1,8 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { CartService } from '../../services/cart.service';
+import { NotificationService } from '../../services/notification.service';
 import { Carrito } from '../../models';
 
 @Component({
@@ -14,6 +15,8 @@ import { Carrito } from '../../models';
 export class CartComponent implements OnInit {
   cart: Carrito | null = null;
   loading = false;
+
+  private notification = inject(NotificationService);
 
   constructor(
     private cartService: CartService,
@@ -47,7 +50,14 @@ export class CartComponent implements OnInit {
   removeItem(itemId: number) {
     const clientId = this.getClientId();
     if (clientId) {
-      this.cartService.removeFromCart(clientId, itemId).subscribe();
+      this.notification.confirmDelete('Producto del carrito').then((confirmed) => {
+        if (confirmed) {
+          this.cartService.removeFromCart(clientId, itemId).subscribe({
+            next: () => this.notification.success('Producto eliminado del carrito'),
+            error: () => this.notification.error('No se pudo eliminar el producto'),
+          });
+        }
+      });
     }
   }
 

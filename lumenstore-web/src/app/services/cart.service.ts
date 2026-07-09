@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -17,6 +17,32 @@ export class CartService extends ApiService {
   readonly cartCount$ = this.cartCountSubject.asObservable();
 
   private authService = inject(AuthService);
+
+  // ── Drawer state ──────────────────────────────
+  private readonly drawerOpen = signal(false);
+  readonly drawerOpen$ = new BehaviorSubject<boolean>(false);
+
+  isDrawerOpen(): boolean {
+    return this.drawerOpen();
+  }
+
+  openDrawer(): void {
+    this.drawerOpen.set(true);
+    this.drawerOpen$.next(true);
+  }
+
+  closeDrawer(): void {
+    this.drawerOpen.set(false);
+    this.drawerOpen$.next(false);
+  }
+
+  toggleDrawer(): void {
+    if (this.drawerOpen()) {
+      this.closeDrawer();
+    } else {
+      this.openDrawer();
+    }
+  }
 
   constructor(http: HttpClient) {
     super(http);

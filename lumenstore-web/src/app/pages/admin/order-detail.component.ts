@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { SaleService } from '../../services/sale.service';
@@ -17,6 +17,7 @@ export class AdminOrderDetailComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private saleService: SaleService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -28,13 +29,17 @@ export class AdminOrderDetailComponent implements OnInit {
 
   load(id: number) {
     this.loading = true;
+    this.cdr.detectChanges();
+
     this.saleService.getSaleById(id).subscribe(
       (o) => {
         this.order = o;
         this.loading = false;
+        this.cdr.detectChanges();
       },
       () => {
         this.loading = false;
+        this.cdr.detectChanges();
       },
     );
   }
@@ -42,7 +47,10 @@ export class AdminOrderDetailComponent implements OnInit {
   setStatus(status: string) {
     if (!this.order) return;
     this.saleService.updateSaleStatus(this.order.id, status).subscribe(
-      (updated) => (this.order = updated),
+      (updated) => {
+        this.order = updated;
+        this.cdr.detectChanges();
+      },
       () => alert('Error actualizando estado'),
     );
   }

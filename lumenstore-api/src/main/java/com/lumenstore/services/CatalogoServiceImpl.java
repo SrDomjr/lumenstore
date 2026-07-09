@@ -33,11 +33,45 @@ public class CatalogoServiceImpl implements CatalogoService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MarcaResponseDTO> getActiveBrands() {
-        return marcaRepository.findByIsActiveTrueOrderByNameAsc()
+    public List<CategoriaResponseDTO> getAllCategories() {
+        return categoriaRepository.findAll()
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CategoriaResponseDTO getCategoryById(Long id) {
+        Categoria categoria = categoriaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Categoría no encontrada con id: " + id));
+        return toDto(categoria);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MarcaResponseDTO> getActiveBrands() {
+        return marcaRepository.findByIsActiveTrueOrderByNameAsc()
+                .stream()
+                .map(this::toBrandDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MarcaResponseDTO> getAllBrands() {
+        return marcaRepository.findAll()
+                .stream()
+                .map(this::toBrandDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MarcaResponseDTO getBrandById(Long id) {
+        Marca marca = marcaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Marca no encontrada con id: " + id));
+        return toBrandDto(marca);
     }
 
     private CategoriaResponseDTO toDto(Categoria categoria) {
@@ -45,16 +79,20 @@ public class CatalogoServiceImpl implements CatalogoService {
                 .id(categoria.getId())
                 .name(categoria.getName())
                 .slug(categoria.getSlug())
+                .description(categoria.getDescription())
                 .imageUrl(categoria.getImageUrl())
+                .isActive(categoria.getIsActive())
                 .build();
     }
 
-    private MarcaResponseDTO toDto(Marca marca) {
+    private MarcaResponseDTO toBrandDto(Marca marca) {
         return MarcaResponseDTO.builder()
                 .id(marca.getId())
                 .name(marca.getName())
                 .slug(marca.getSlug())
+                .description(marca.getDescription())
                 .logoUrl(marca.getLogoUrl())
+                .isActive(marca.getIsActive())
                 .build();
     }
 }

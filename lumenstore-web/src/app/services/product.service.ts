@@ -33,6 +33,9 @@ export class ProductService extends ApiService {
     if (filters.maxPrice != null) {
       params.push(`maxPrice=${filters.maxPrice}`);
     }
+    if (filters.activeOnly != null) {
+      params.push(`activeOnly=${filters.activeOnly}`);
+    }
     params.push(`page=${page}`);
     params.push(`size=${size}`);
     const queryString = params.length ? `?${params.join('&')}` : '';
@@ -118,6 +121,18 @@ export class ProductService extends ApiService {
 
   getNewProducts(): Observable<Producto[]> {
     return this.get<Producto[]>(`/products/new`);
+  }
+
+  // Admin — obtiene TODOS los productos (activos e inactivos)
+  getAdminProducts(filters: any = {}, page: number = 0, size: number = 100): Observable<any> {
+    const params: string[] = [];
+    if (filters.categoryId) params.push(`categoryId=${filters.categoryId}`);
+    if (filters.brandId) params.push(`brandId=${filters.brandId}`);
+    if (filters.query) params.push(`q=${encodeURIComponent(filters.query)}`);
+    params.push(`page=${page}`);
+    params.push(`size=${size}`);
+    const queryString = params.length ? `?${params.join('&')}` : '';
+    return this.get<any>(`/products/admin${queryString}`);
   }
 
   // Admin CRUD

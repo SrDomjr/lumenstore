@@ -1,0 +1,43 @@
+<div class="admin-users container">
+  <div class="header-panel">
+    <div>
+      <span class="eyebrow">Administración</span>
+      <h1>Usuarios</h1>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-panel">Cargando usuarios...</div>
+
+  <div *ngIf="error && !loading" class="alert alert-danger">{{ error }}</div>
+
+  <div class="table-wrap" *ngIf="!loading && !error && users.length">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Rol</th>
+          <th>Registro</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let u of users">
+          <td class="cell-id">#{{ u.id }}</td>
+          <td>{{ u.firstName }} {{ u.lastName }}</td>
+          <td>{{ u.email }}</td>
+          <td>
+            <span class="badge" [class.badge-primary]="u.roleId === 1">
+              {{ u.roleId === 1 ? 'Admin' : 'Cliente' }}
+            </span>
+          </td>
+          <td class="text-muted">{{ u.createdAt | date: 'short' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="!loading && !error && !users.length" class="empty-state">
+    <p>No hay usuarios registrados.</p>
+  </div>
+</div>

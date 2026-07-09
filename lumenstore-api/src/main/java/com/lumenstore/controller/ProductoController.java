@@ -4,6 +4,10 @@ package com.lumenstore.controller;
 import com.lumenstore.dto.ProductoRequestDTO;
 import com.lumenstore.dto.ProductoResponseDTO;
 import com.lumenstore.dto.ProductVariantResponseDTO;
+import com.lumenstore.models.ProductImage;
+import com.lumenstore.models.ProductVariant;
+import com.lumenstore.repository.IProductImageRepository;
+import com.lumenstore.repository.IProductVariantRepository;
 import com.lumenstore.services.ProductoService;
 
 import jakarta.validation.Valid;
@@ -13,8 +17,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/products")
@@ -22,8 +29,9 @@ import java.util.List;
 public class ProductoController {
 
     private final ProductoService productService;
+    private final IProductVariantRepository variantRepository;
+    private final IProductImageRepository imageRepository;
 
-    // GET /api/v1/products?page=0&size=10
     @GetMapping
     public ResponseEntity<Page<ProductoResponseDTO>> getAllProducts(
             @RequestParam(required = false) Long categoryId,
@@ -35,24 +43,22 @@ public class ProductoController {
         return ResponseEntity.ok(productService.getProducts(pageable, categoryId, brandId, q, minPrice, maxPrice));
     }
 
-    // GET /api/v1/products/category/5
+    // ENDPOINT DEDICADO para admin - NO hay conflicto con /{id} porque Spring
+    // distingue rutas con longitud fija vs variables de path
+    @GetMapping("/admin")
+    public ResponseEntity<Page<ProductoResponseDTO>> getAdminProducts(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long brandId,
+            @RequestParam(required = false) String q,
+            @PageableDefault(size = 100) Pageable pageable) {
+        return ResponseEntity.ok(productService.getAdminProducts(pageable, categoryId, brandId, q));
+    }
+
     @GetMapping("/category/{categoryId}")
     public ResponseEntity<Page<ProductoResponseDTO>> getProductsByCategory(
             @PathVariable Long categoryId,
             @PageableDefault(size = 12) Pageable pageable) {
         return ResponseEntity.ok(productService.getProductsByCategory(categoryId, pageable));
-    }
-
-    // GET /api/v1/products/5
-    @GetMapping("/{id}")
-    public ResponseEntity<ProductoResponseDTO> getProductById(@PathVariable Long id) {
-        return ResponseEntity.ok(productService.getProductById(id));
-    }
-
-    // GET /api/v1/products/slug/smartphone-samsung-s24
-    @GetMapping("/slug/{slug}")
-    public ResponseEntity<ProductoResponseDTO> getProductBySlug(@PathVariable String slug) {
-        return ResponseEntity.ok(productService.getProductBySlug(slug));
     }
 
     @GetMapping("/trending")
@@ -70,22 +76,27 @@ public class ProductoController {
         return ResponseEntity.ok(productService.getDiscountedProducts());
     }
 
-    // GET /api/v1/products/{productId}/variants
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<ProductoResponseDTO> getProductBySlug(@PathVariable String slug) {
+        return ResponseEntity.ok(productService.getProductBySlug(slug));
+    }
+
     @GetMapping("/{productId}/variants")
     public ResponseEntity<List<ProductVariantResponseDTO>> getProductVariants(
             @PathVariable Long productId) {
         return ResponseEntity.ok(productService.getProductVariants(productId));
     }
 
-    // ========== ADMIN CRUD ==========
+    @GetMapping("/{id}")
+    public ResponseEntity<ProductoResponseDTO> getProductById(@PathVariable Long id) {
+        return ResponseEntity.ok(productService.getProductById(id));
+    }
 
-    // POST /api/v1/products
     @PostMapping
     public ResponseEntity<ProductoResponseDTO> createProduct(@Valid @RequestBody ProductoRequestDTO request) {
         return ResponseEntity.ok(productService.createProduct(request));
     }
 
-    // PUT /api/v1/products/5
     @PutMapping("/{id}")
     public ResponseEntity<ProductoResponseDTO> updateProduct(
             @PathVariable Long id,
@@ -93,10 +104,76 @@ public class ProductoController {
         return ResponseEntity.ok(productService.updateProduct(id, request));
     }
 
-    // DELETE /api/v1/products/5
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ─── Variant CRUD ─────────────────────────────────────────
+
+    @PostMapping("/{productId}/variants")
+    public ResponseEntity<ProductVariantResponseDTO> createVariant(
+            @PathVariable Long productId,
+            @RequestBody Map<String, Object> body) {
+        return ResponseEntity.ok(productService.createVariant(productId, body));
+    }
+
+    @PutMapping("/variants/{variantId}")
+    public ResponseEntity<ProductVariantResponseDTO> updateVariant(
+            @PathVariable Long variantId,
+            @RequestBody Map<String, Object> body) {
+        return ResponseEntity.ok(productService.updateVariant(variantId, body));
+    }
+
+    // ─── Images ───────────────────────────────────────────────
+
+    @GetMapping("/{productId}/images")
+    public ResponseEntity<List<ProductImage>> getProductImages(@PathVariable Long productId) {
+        return ResponseEntity.ok(imageRepository.findByProductIdOrderBySortOrderAsc(productId));
+    }
+
+    @PostMapping("/{productId}/images")
+    public ResponseEntity<List<ProductImage>> uploadImages(
+            @PathVariable Long productId,
+            @RequestParam("files") List<MultipartFile> files) {
+        return ResponseEntity.ok(productService.uploadImages(productId, files));
+    }
+
+    @PutMapping("/{productId}/images/{imageId}/main")
+    public ResponseEntity<Void> setMainImage(
+            @PathVariable Long productId,
+            @PathVariable Long imageId) {
+        productService.setMainImage(productId, imageId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{productId}/images/{imageId}")
+    public ResponseEntity<Void> deleteImage(
+            @PathVariable Long productId,
+            @PathVariable Long imageId) {
+        imageRepository.deleteById(imageId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ─── Tags ─────────────────────────────────────────────────
+
+    @GetMapping("/{productId}/tags")
+    public ResponseEntity<List<String>> getProductTags(@PathVariable Long productId) {
+        return ResponseEntity.ok(productService.getProductTags(productId));
+    }
+
+    @PutMapping("/{productId}/tags")
+    public ResponseEntity<Void> updateProductTags(
+            @PathVariable Long productId,
+            @RequestBody List<String> tags) {
+        productService.updateProductTags(productId, tags);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{productId}/tags")
+    public ResponseEntity<Void> deleteProductTags(@PathVariable Long productId) {
+        productService.updateProductTags(productId, List.of());
         return ResponseEntity.noContent().build();
     }
 }

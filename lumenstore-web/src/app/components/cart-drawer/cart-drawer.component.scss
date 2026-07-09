@@ -1,0 +1,491 @@
+/* =====================================================
+   CART DRAWER – Mini Carrito Lateral
+   Diseño limpio, moderno y responsivo
+   ===================================================== */
+
+// ─── Variables ──────────────────────────────────────
+$drawer-width: 420px;
+$drawer-width-mobile: 100%;
+$header-height: 64px;
+$footer-min-height: 200px;
+$primary: #667eea;
+$primary-hover: #5568d3;
+$danger: #dc3545;
+$success: #28a745;
+$text: #111828;
+$text-muted: #6b7280;
+$border: #e5e7eb;
+$bg: #ffffff;
+$bg-alt: #f8fafc;
+$shadow: 0 10px 40px rgba(15, 23, 42, 0.15);
+$radius: 14px;
+$radius-sm: 10px;
+$transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+/* ─── BACKDROP ──────────────────────────────────── */
+.cart-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity $transition,
+    visibility $transition;
+
+  &.backdrop-visible {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* ─── DRAWER ─────────────────────────────────────── */
+.cart-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 1000;
+  width: $drawer-width;
+  max-width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background: $bg;
+  box-shadow: $shadow;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform $transition;
+
+  &.drawer-open {
+    transform: translateX(0);
+  }
+}
+
+/* ─── CABECERA ────────────────────────────────────── */
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid $border;
+  min-height: $header-height;
+  flex-shrink: 0;
+}
+
+.drawer-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: $text;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+
+  i {
+    color: $primary;
+    font-size: 1.15rem;
+  }
+}
+
+.item-count-badge {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: $text-muted;
+}
+
+.close-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: $bg-alt;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: $text-muted;
+  font-size: 1.2rem;
+  transition:
+    background 0.2s,
+    color 0.2s;
+
+  &:hover {
+    background: #e5e7eb;
+    color: $text;
+  }
+}
+
+/* ─── CUERPO (scroll) ─────────────────────────────── */
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  scroll-behavior: smooth;
+
+  /* Scrollbar personalizada */
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.15);
+    border-radius: 99px;
+  }
+}
+
+/* Estado vacío */
+.empty-cart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 3rem;
+    color: #d1d5db;
+    margin-bottom: 16px;
+  }
+
+  .empty-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $text;
+    margin-bottom: 6px;
+  }
+
+  .empty-sub {
+    font-size: 0.9rem;
+    color: $text-muted;
+    margin-bottom: 20px;
+  }
+}
+
+/* ─── ITEMS LIST ──────────────────────────────────── */
+.cart-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cart-item {
+  display: flex;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  background: $bg;
+  transition:
+    border-color 0.2s,
+    background 0.3s;
+
+  &:hover {
+    border-color: #d1d5db;
+  }
+
+  /* Animación de highlight al agregar un nuevo ítem */
+  &.item-highlight {
+    background: #eef2ff;
+    border-color: $primary;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+  }
+}
+
+/* Imagen miniatura */
+.item-image {
+  width: 76px;
+  height: 76px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: $bg-alt;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+/* Detalles del ítem */
+.item-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: $text;
+  margin: 0;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Variantes (talla / color) */
+.item-variants {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.variant-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: $text-muted;
+  background: $bg-alt;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid $border;
+
+  .color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    display: inline-block;
+  }
+}
+
+/* Precios */
+.item-pricing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.current-price {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: $text;
+}
+
+.original-price {
+  font-size: 0.8rem;
+  color: $text-muted;
+  text-decoration: line-through;
+}
+
+/* Acciones: cantidad + eliminar */
+.item-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.qty-selector {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid $border;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.qty-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: $bg-alt;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: $text;
+  transition: background 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #e5e7eb;
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+.qty-value {
+  min-width: 32px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: $text;
+}
+
+.remove-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 1rem;
+  transition:
+    color 0.2s,
+    background 0.2s;
+
+  &:hover {
+    color: $danger;
+    background: rgba(220, 53, 69, 0.08);
+  }
+}
+
+/* Stock máximo */
+.stock-warning {
+  font-size: 0.7rem;
+  color: #f59e0b;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* Subtotal del ítem */
+.item-subtotal {
+  font-size: 0.75rem;
+  color: $text-muted;
+  margin-top: 2px;
+  text-align: right;
+}
+
+/* ─── PIE DE PÁGINA (fijo) ────────────────────────── */
+.drawer-footer {
+  flex-shrink: 0;
+  padding: 16px 20px 20px;
+  border-top: 1px solid $border;
+  background: $bg;
+}
+
+.totals {
+  margin-bottom: 16px;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.total-label {
+  font-size: 0.9rem;
+  color: $text-muted;
+}
+
+.total-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: $text;
+}
+
+.total-final {
+  border-top: 1px solid $border;
+  margin-top: 4px;
+  padding-top: 10px;
+
+  .total-label {
+    font-size: 1rem;
+    font-weight: 700;
+    color: $text;
+  }
+
+  .total-amount {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: $primary;
+  }
+}
+
+.shipping-note {
+  font-size: 0.75rem;
+  color: $text-muted;
+  margin: 8px 0 0;
+  text-align: center;
+}
+
+/* Botón principal de checkout */
+.btn-checkout {
+  width: 100%;
+  padding: 14px 20px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: 999px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: $primary;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.15s;
+
+  &:hover {
+    background: $primary-hover;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.btn-continue {
+  width: 100%;
+  padding: 10px;
+  font-size: 0.85rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid $border;
+  color: $text-muted;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+
+  &:hover {
+    color: $text;
+    border-color: #d1d5db;
+  }
+}
+
+/* ─── RESPONSIVE ──────────────────────────────────── */
+@media (max-width: 480px) {
+  .cart-drawer {
+    width: 100vw;
+  }
+
+  .cart-item {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .item-image {
+    width: 64px;
+    height: 64px;
+  }
+}

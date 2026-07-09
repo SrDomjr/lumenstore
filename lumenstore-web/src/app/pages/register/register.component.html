@@ -1,71 +1,71 @@
 <div class="register-container">
   <div class="register-card">
-    <h1>Create Account</h1>
-    <p class="subtitle">Join Lumenstore today</p>
+    <h1>Crear cuenta</h1>
+    <p class="subtitle">Únete a Lumenstore hoy</p>
 
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
       <div class="form-group">
-        <label for="username">Username</label>
+        <label for="username">Usuario</label>
         <input
           type="text"
           id="username"
           formControlName="username"
           class="form-control"
           [class.is-invalid]="submitted && f['username']?.invalid"
-          placeholder="Choose a username"
+          placeholder="Elige un nombre de usuario"
         />
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label for="firstName">First Name</label>
+          <label for="firstName">Nombre</label>
           <input
             type="text"
             id="firstName"
             formControlName="firstName"
             class="form-control"
             [class.is-invalid]="submitted && f['firstName']?.invalid"
-            placeholder="First name"
+            placeholder="Tu nombre"
           />
         </div>
         <div class="form-group">
-          <label for="lastName">Last Name</label>
+          <label for="lastName">Apellido</label>
           <input
             type="text"
             id="lastName"
             formControlName="lastName"
             class="form-control"
             [class.is-invalid]="submitted && f['lastName']?.invalid"
-            placeholder="Last name"
+            placeholder="Tu apellido"
           />
         </div>
       </div>
 
       <div class="form-group">
-        <label for="email">Email</label>
+        <label for="email">Correo electrónico</label>
         <input
           type="email"
           id="email"
           formControlName="email"
           class="form-control"
           [class.is-invalid]="submitted && f['email']?.invalid"
-          placeholder="Email address"
+          placeholder="tu@email.com"
         />
       </div>
 
       <div class="form-group">
-        <label for="password">Password</label>
+        <label for="password">Contraseña</label>
         <input
           type="password"
           id="password"
           formControlName="password"
           class="form-control"
           [class.is-invalid]="submitted && f['password']?.invalid"
-          placeholder="Password (min 8 characters)"
+          placeholder="Mínimo 8 caracteres"
         />
       </div>
 
       <div class="form-group">
-        <label for="confirmPassword">Confirm Password</label>
+        <label for="confirmPassword">Confirmar contraseña</label>
         <input
           type="password"
           id="confirmPassword"
@@ -74,10 +74,10 @@
           [class.is-invalid]="
             submitted && (f['confirmPassword']?.invalid || form.errors?.['mismatch'])
           "
-          placeholder="Confirm password"
+          placeholder="Repite tu contraseña"
         />
         <div *ngIf="submitted && form.errors?.['mismatch']" class="error-message">
-          Passwords don't match
+          Las contraseñas no coinciden
         </div>
       </div>
 
@@ -86,13 +86,13 @@
       </div>
 
       <button type="submit" class="btn btn-primary w-100" [disabled]="loading">
-        <span *ngIf="!loading">Create Account</span>
-        <span *ngIf="loading">Creating...</span>
+        <span *ngIf="!loading">Crear cuenta</span>
+        <span *ngIf="loading">Creando...</span>
       </button>
     </form>
 
     <div class="register-footer">
-      <p>Already have an account? <a routerLink="/login">Sign in</a></p>
+      <p>¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a></p>
     </div>
   </div>
 </div>

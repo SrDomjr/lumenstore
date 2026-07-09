@@ -81,47 +81,87 @@ export const routes: Routes = [
       import('./pages/addresses/addresses.component').then((m) => m.AddressesComponent),
     canActivate: [AuthGuard],
   },
+  // ─── Admin root: loads sidebar layout ──────────────────────
   {
     path: 'admin',
     loadComponent: () =>
-      import('./pages/admin/dashboard.component').then((m) => m.AdminDashboardComponent),
+      import('./pages/admin/catalog-layout.component').then((m) => m.AdminCatalogLayoutComponent),
     canActivate: [RoleGuard],
     data: { roles: ['admin'] },
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./pages/admin/dashboard.component').then((m) => m.AdminDashboardComponent),
+      },
+      {
+        path: 'catalog/products',
+        loadComponent: () =>
+          import('./pages/admin/products.component').then((m) => m.AdminProductsComponent),
+      },
+      {
+        path: 'catalog/products/new',
+        loadComponent: () =>
+          import('./pages/admin/product-edit.component').then((m) => m.AdminProductEditComponent),
+      },
+      {
+        path: 'catalog/products/:id/edit',
+        loadComponent: () =>
+          import('./pages/admin/product-edit.component').then((m) => m.AdminProductEditComponent),
+      },
+      {
+        path: 'catalog/categories',
+        loadComponent: () =>
+          import('./pages/admin/categories.component').then((m) => m.AdminCategoriesComponent),
+      },
+      {
+        path: 'catalog/brands',
+        loadComponent: () =>
+          import('./pages/admin/brands.component').then((m) => m.AdminBrandsComponent),
+      },
+      {
+        path: 'catalog/attributes',
+        loadComponent: () =>
+          import('./pages/admin/attributes.component').then((m) => m.AdminAttributesComponent),
+      },
+      {
+        path: 'orders',
+        loadComponent: () =>
+          import('./pages/admin/orders.component').then((m) => m.AdminOrdersComponent),
+      },
+      {
+        path: 'orders/:id',
+        loadComponent: () =>
+          import('./pages/admin/order-detail.component').then((m) => m.AdminOrderDetailComponent),
+      },
+      {
+        path: 'users',
+        loadComponent: () =>
+          import('./pages/admin/users.component').then((m) => m.AdminUsersComponent),
+      },
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full',
+      },
+    ],
   },
+  // Legacy redirects
   {
     path: 'admin/products',
-    loadComponent: () =>
-      import('./pages/admin/products.component').then((m) => m.AdminProductsComponent),
-    canActivate: [RoleGuard],
-    data: { roles: ['admin'] },
+    redirectTo: 'admin/catalog/products',
   },
   {
     path: 'admin/products/new',
-    loadComponent: () =>
-      import('./pages/admin/product-edit.component').then((m) => m.AdminProductEditComponent),
-    canActivate: [RoleGuard],
-    data: { roles: ['admin'] },
+    redirectTo: 'admin/catalog/products/new',
   },
   {
     path: 'admin/products/:id/edit',
-    loadComponent: () =>
-      import('./pages/admin/product-edit.component').then((m) => m.AdminProductEditComponent),
-    canActivate: [RoleGuard],
-    data: { roles: ['admin'] },
-  },
-  {
-    path: 'admin/orders',
-    loadComponent: () =>
-      import('./pages/admin/orders.component').then((m) => m.AdminOrdersComponent),
-    canActivate: [RoleGuard],
-    data: { roles: ['admin'] },
+    redirectTo: 'admin/catalog/products/:id/edit',
   },
   {
     path: 'admin/orders/:id',
-    loadComponent: () =>
-      import('./pages/admin/order-detail.component').then((m) => m.AdminOrderDetailComponent),
-    canActivate: [RoleGuard],
-    data: { roles: ['admin'] },
+    redirectTo: 'admin/orders/:id',
   },
   {
     path: '**',

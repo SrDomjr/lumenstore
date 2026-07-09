@@ -12,6 +12,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { WishlistService } from '../../services/wishlist.service';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 
 export interface ProductCardModel {
   id: number;
@@ -43,6 +44,7 @@ export class ProductCardComponent implements OnInit {
   private router = inject(Router);
   private wishlistService = inject(WishlistService);
   private authService = inject(AuthService);
+  private notification = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
 
   get brandName(): string {
@@ -99,7 +101,7 @@ export class ProductCardComponent implements OnInit {
     e.preventDefault();
     const clientId = this.getClientId();
     if (!clientId) {
-      alert('Inicia sesión para gestionar favoritos');
+      this.notification.warning('Inicia sesión para gestionar favoritos');
       this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
       return;
     }
@@ -127,7 +129,7 @@ export class ProductCardComponent implements OnInit {
           this.isInWishlist = false;
           this.cdr.markForCheck();
         },
-        error: () => alert('No se pudo quitar de favoritos'),
+        error: () => this.notification.error('No se pudo quitar de favoritos'),
       });
     } else {
       this.wishlistService.addProductToWishlist(clientId, wishlistId, productId).subscribe({
@@ -135,7 +137,7 @@ export class ProductCardComponent implements OnInit {
           this.isInWishlist = true;
           this.cdr.markForCheck();
         },
-        error: () => alert('No se pudo agregar a favoritos'),
+        error: () => this.notification.error('No se pudo agregar a favoritos'),
       });
     }
   }
@@ -150,11 +152,11 @@ export class ProductCardComponent implements OnInit {
               this.isInWishlist = true;
               this.cdr.markForCheck();
             },
-            error: () => alert('No se pudo agregar a favoritos'),
+            error: () => this.notification.error('No se pudo agregar a favoritos'),
           });
         }
       },
-      error: () => alert('No se pudo crear lista de favoritos'),
+      error: () => this.notification.error('No se pudo crear lista de favoritos'),
     });
   }
 

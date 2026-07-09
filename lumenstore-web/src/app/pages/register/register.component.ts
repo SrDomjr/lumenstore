@@ -10,6 +10,7 @@ import {
 import { Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 import { RegisterRequest } from '../../models';
 
 @Component({
@@ -29,6 +30,7 @@ export class RegisterComponent implements OnInit {
     private formBuilder: FormBuilder,
     private router: Router,
     private authService: AuthService,
+    private notification: NotificationService,
   ) {}
 
   ngOnInit() {
@@ -84,6 +86,7 @@ export class RegisterComponent implements OnInit {
       )
       .subscribe({
         next: () => {
+          this.notification.success('Registro exitoso', 'Tu cuenta ha sido creada correctamente');
           this.router.navigate(['/home']).then((success) => {
             if (!success) {
               this.error = 'Unable to navigate after registration. Please try again.';
@@ -94,6 +97,7 @@ export class RegisterComponent implements OnInit {
           console.error('Registration error', error);
           this.error =
             error.error?.message || error.message || 'Registration failed. Please try again.';
+          this.notification.error(this.error, 'Error de registro');
         },
       });
   }

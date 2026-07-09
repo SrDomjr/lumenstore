@@ -37,6 +37,19 @@ public interface IProductoRepository extends JpaRepository<Producto, Long> {
             @Param("maxPrice") BigDecimal maxPrice,
             Pageable pageable);
 
+    // Admin: mostrar TODOS los productos (sin filtrar por isActive)
+    @Query("SELECT DISTINCT p FROM Producto p " +
+           "LEFT JOIN p.variants v " +
+           "WHERE (:categoryId IS NULL OR p.category.id = :categoryId) " +
+           "AND (:brandId IS NULL OR p.brand.id = :brandId) " +
+           "AND (:query IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) " +
+           "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :query, '%')))")
+    Page<Producto> findByFiltersAdmin(
+            @Param("categoryId") Long categoryId,
+            @Param("brandId") Long brandId,
+            @Param("query") String query,
+            Pageable pageable);
+
     // Productos destacados
     List<Producto> findTop12ByIsActiveTrueAndFeaturedTrueOrderByCreatedAtDesc();
 

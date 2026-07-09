@@ -1,19 +1,27 @@
 package com.lumenstore.services;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.lumenstore.dto.ProductoResponseDTO;
 import com.lumenstore.dto.ProductVariantResponseDTO;
 import com.lumenstore.dto.ProductoRequestDTO;
+import com.lumenstore.models.ProductImage;
+
 
 public interface ProductoService {
     // Obtener todos los productos activos con paginación
     Page<ProductoResponseDTO> getProducts(Pageable pageable);
 
     Page<ProductoResponseDTO> getProducts(Pageable pageable, Long categoryId, Long brandId, String query, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice);
+    
+    // Obtener TODOS los productos (activos e inactivos) — solo admin
+    Page<ProductoResponseDTO> getAdminProducts(Pageable pageable, Long categoryId, Long brandId, String query);
     
     // Obtener productos filtrados por categoría con paginación
     Page<ProductoResponseDTO> getProductsByCategory(Long categoryId, Pageable pageable);
@@ -36,4 +44,16 @@ public interface ProductoService {
     ProductoResponseDTO createProduct(ProductoRequestDTO request);
     ProductoResponseDTO updateProduct(Long id, ProductoRequestDTO request);
     void deleteProduct(Long id);
+
+    // Variant CRUD
+    ProductVariantResponseDTO createVariant(Long productId, Map<String, Object> body);
+    ProductVariantResponseDTO updateVariant(Long variantId, Map<String, Object> body);
+
+    // Images
+    List<ProductImage> uploadImages(Long productId, List<MultipartFile> files);
+    void setMainImage(Long productId, Long imageId);
+
+    // Tags
+    List<String> getProductTags(Long productId);
+    void updateProductTags(Long productId, List<String> tags);
 }

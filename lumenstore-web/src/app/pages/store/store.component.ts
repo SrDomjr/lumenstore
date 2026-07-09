@@ -228,31 +228,18 @@ export class StoreComponent implements OnInit {
         this.authService.getToken(),
       );
     } catch (e) {}
-    this.cartService.addToCart(clientId, item).subscribe(
-      (res) => {
+    this.cartService.addToCart(clientId, item).subscribe({
+      next: (res) => {
         console.log('AddToCart success', res);
-        this.successMessage = 'Producto agregado al carrito';
-        setTimeout(() => (this.successMessage = null), 2500);
         this.addingSet.delete(prodKey);
-        // CartService.loadCart() is called internally; if you want to navigate:
-        // this.router.navigate(['/cart']);
+        // Abrir el mini carrito lateral
+        this.cartService.openDrawer();
       },
-      (err) => {
+      error: (err) => {
         console.error('AddToCart error', err);
-        // Mostrar mensaje más descriptivo si está disponible
-        if (err && err.status === 403) {
-          this.errorMessage = 'Acceso denegado al carrito (403)';
-        } else if (err && err.error && err.error.message) {
-          this.errorMessage = err.error.message;
-        } else if (err && err.statusText) {
-          this.errorMessage = `Error: ${err.status} ${err.statusText}`;
-        } else {
-          this.errorMessage = 'No se pudo agregar al carrito';
-        }
-        setTimeout(() => (this.errorMessage = null), 4000);
         this.addingSet.delete(prodKey);
       },
-    );
+    });
   }
 
   private getClientId(): number | null {

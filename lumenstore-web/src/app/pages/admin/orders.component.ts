@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -25,6 +25,7 @@ export class AdminOrdersComponent implements OnInit {
   constructor(
     private saleService: SaleService,
     private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -34,6 +35,7 @@ export class AdminOrdersComponent implements OnInit {
   load() {
     this.loading = true;
     this.error = null;
+    this.cdr.detectChanges();
 
     // If date range provided, use sales report endpoint
     if (this.startDate && this.endDate) {
@@ -41,10 +43,12 @@ export class AdminOrdersComponent implements OnInit {
         (res) => {
           this.orders = res || [];
           this.loading = false;
+          this.cdr.detectChanges();
         },
         () => {
           this.error = 'Error obteniendo el reporte de ventas.';
           this.loading = false;
+          this.cdr.detectChanges();
         },
       );
       return;
@@ -57,10 +61,12 @@ export class AdminOrdersComponent implements OnInit {
           this.orders = res || [];
           this.applyClientSearch();
           this.loading = false;
+          this.cdr.detectChanges();
         },
         () => {
           this.error = 'No se pudieron cargar los pedidos.';
           this.loading = false;
+          this.cdr.detectChanges();
         },
       );
       return;
@@ -72,10 +78,12 @@ export class AdminOrdersComponent implements OnInit {
         this.orders = resp?.content || resp || [];
         this.applyClientSearch();
         this.loading = false;
+        this.cdr.detectChanges();
       },
       () => {
         this.error = 'No se pudieron cargar los pedidos.';
         this.loading = false;
+        this.cdr.detectChanges();
       },
     );
   }

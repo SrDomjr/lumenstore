@@ -1,138 +1,169 @@
+/* ─── REGISTER ─── H&M Editorial ─── */
 .register-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
+  background: #fff;
+}
+
+.register-container::before {
+  content: '';
+  background: #ede8e3;
+  display: block;
+}
+
+.register-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px 72px;
+  max-width: 600px;
+
+  h1 {
+    font-size: 2.2rem;
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    color: #111;
+    margin: 0 0 8px;
+  }
+
+  .subtitle {
+    color: #767676;
+    font-size: 0.85rem;
+    margin-bottom: 36px;
+    line-height: 1.6;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #111;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid #e5e5e5;
+      background: #fff;
+      font-size: 0.9rem;
+      color: #111;
+      transition: border-color 0.2s ease;
+
+      &:focus {
+        outline: none;
+        border-color: #111;
+      }
+
+      &::placeholder {
+        color: #bbb;
+      }
+
+      &.is-invalid {
+        border-color: #e4002b;
+      }
+    }
+
+    .error-message {
+      color: #e4002b;
+      font-size: 0.75rem;
+      margin-top: 6px;
+    }
+  }
+
+  .alert {
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+
+    &.alert-danger {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+  }
+
+  .btn {
+    padding: 16px 24px;
+    border: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &.btn-primary {
+      background: #111;
+      color: #fff;
+      border: 1px solid #111;
+
+      &:hover:not(:disabled) {
+        background: #333;
+        border-color: #333;
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .w-100 {
+    width: 100%;
+  }
+
+  .register-footer {
+    text-align: center;
+    margin-top: 28px;
+    font-size: 0.85rem;
+
+    p {
+      color: #767676;
+      margin: 0;
+
+      a {
+        color: #111;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        font-weight: 500;
+
+        &:hover {
+          color: #000;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .register-container {
+    grid-template-columns: 1fr;
+
+    &::before {
+      display: none;
+    }
+  }
 
   .register-card {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-    padding: 40px;
-    width: 100%;
-    max-width: 500px;
-
-    h1 {
-      text-align: center;
-      color: #333;
-      margin-bottom: 10px;
-      font-size: 28px;
-    }
-
-    .subtitle {
-      text-align: center;
-      color: #999;
-      margin-bottom: 30px;
-      font-size: 14px;
-    }
+    padding: 40px 24px;
+    max-width: 100%;
 
     .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-
-      label {
-        display: block;
-        margin-bottom: 8px;
-        color: #333;
-        font-weight: 500;
-        font-size: 14px;
-      }
-
-      .form-control {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-        transition: border-color 0.3s;
-
-        &:focus {
-          outline: none;
-          border-color: #667eea;
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        &.is-invalid {
-          border-color: #dc3545;
-        }
-      }
-
-      .error-message {
-        color: #dc3545;
-        font-size: 12px;
-        margin-top: 5px;
-      }
-    }
-
-    .alert {
-      padding: 12px;
-      border-radius: 4px;
-      margin-bottom: 20px;
-      font-size: 14px;
-
-      &.alert-danger {
-        background-color: #f8d7da;
-        border: 1px solid #f5c6cb;
-        color: #721c24;
-      }
-    }
-
-    .btn {
-      padding: 12px 20px;
-      border: none;
-      border-radius: 4px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-
-      &.btn-primary {
-        background: #667eea;
-        color: white;
-
-        &:hover:not(:disabled) {
-          background: #5568d3;
-          transform: translateY(-2px);
-          box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        &:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-        }
-      }
-    }
-
-    .w-100 {
-      width: 100%;
-    }
-
-    .register-footer {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 14px;
-
-      p {
-        color: #666;
-        margin: 0;
-
-        a {
-          color: #667eea;
-          text-decoration: none;
-          font-weight: 600;
-
-          &:hover {
-            text-decoration: underline;
-          }
-        }
-      }
+      grid-template-columns: 1fr;
     }
   }
 }

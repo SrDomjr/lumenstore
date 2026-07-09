@@ -1,0 +1,139 @@
+<!-- Backdrop -->
+<div
+  class="cart-backdrop"
+  [class.backdrop-visible]="isOpen$ | async"
+  (click)="onBackdropClick($event)"
+></div>
+
+<!-- Drawer Panel -->
+<aside
+  class="cart-drawer"
+  [class.drawer-open]="isOpen$ | async"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Tu carrito"
+>
+  <!-- ─── CABECERA ─── -->
+  <div class="drawer-header">
+    <h2 class="drawer-title">
+      <i class="fa-solid fa-cart-arrow-down"></i>
+      Tu carrito
+      <span class="item-count-badge" *ngIf="(cart$ | async)?.items as items">
+        ({{ items.length }} {{ items.length === 1 ? 'producto' : 'productos' }})
+      </span>
+    </h2>
+    <button class="close-btn" (click)="close()" aria-label="Cerrar carrito">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <!-- ─── CUERPO ─── -->
+  <div class="drawer-body" #itemsContainer>
+    <!-- Estado vacío -->
+    <div class="empty-cart" *ngIf="(cart$ | async)?.items?.length === 0">
+      <div class="empty-icon">
+        <i class="fa-solid fa-bag-shopping"></i>
+      </div>
+      <p class="empty-title">Tu carrito está vacío</p>
+      <p class="empty-sub">Agrega productos para empezar a comprar</p>
+      <a routerLink="/store" class="btn btn-primary" (click)="close()">Ir a la tienda</a>
+    </div>
+
+    <!-- Lista de productos -->
+    <div class="cart-items" *ngIf="(cart$ | async)?.items?.length! > 0">
+      <div class="cart-item" *ngFor="let item of (cart$ | async)?.items; trackBy: trackByItemId">
+        <!-- Imagen -->
+        <div class="item-image">
+          <img
+            [src]="item.imageUrl || 'https://via.placeholder.com/80x80?text=Sin+imagen'"
+            [alt]="item.productName"
+            loading="lazy"
+          />
+        </div>
+
+        <!-- Info -->
+        <div class="item-details">
+          <h4 class="item-name">{{ item.productName }}</h4>
+
+          <!-- Talla y Color -->
+          <div class="item-variants" *ngIf="item.size || item.color">
+            <span class="variant-tag" *ngIf="item.size">
+              <i class="fa-regular fa-ruler"></i> {{ item.size }}
+            </span>
+            <span class="variant-tag" *ngIf="item.color">
+              <span class="color-dot" [style.background]="item.color"></span>
+              {{ item.color }}
+            </span>
+          </div>
+
+          <!-- Precio unitario -->
+          <div class="item-pricing">
+            <span class="current-price">{{ formatPrice(item.price) }}</span>
+          </div>
+
+          <!-- Selector de cantidad + eliminar -->
+          <div class="item-actions">
+            <div class="qty-selector">
+              <button
+                class="qty-btn"
+                [disabled]="item.quantity <= 1"
+                (click)="decreaseQty(item)"
+                aria-label="Reducir cantidad"
+              >
+                <i class="fa-solid fa-minus"></i>
+              </button>
+              <span class="qty-value">{{ item.quantity }}</span>
+              <button
+                class="qty-btn"
+                [disabled]="item.quantity >= maxStock()"
+                (click)="increaseQty(item)"
+                aria-label="Aumentar cantidad"
+              >
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+
+            <button
+              class="remove-btn"
+              (click)="removeItem(item)"
+              aria-label="Eliminar producto"
+              title="Eliminar"
+            >
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+          </div>
+
+          <!-- Stock máximo alcanzado -->
+          <div class="stock-warning" *ngIf="item.quantity >= maxStock()">
+            Stock máximo alcanzado
+          </div>
+
+          <!-- Subtotal por ítem -->
+          <div class="item-subtotal">Subtotal: {{ formatPrice(item.quantity * item.price) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── PIE DE PÁGINA (fijo) ─── -->
+  <div class="drawer-footer" *ngIf="(cart$ | async)?.items?.length! > 0">
+    <div class="totals">
+      <div class="total-row">
+        <span class="total-label">Subtotal</span>
+        <span class="total-value">{{ formatPrice(getSubtotal(cart$ | async)) }}</span>
+      </div>
+      <div class="total-row total-final">
+        <span class="total-label">Total</span>
+        <span class="total-value total-amount">{{ formatPrice(getSubtotal(cart$ | async)) }}</span>
+      </div>
+      <p class="shipping-note">Los costos de envío se calcularán al finalizar la compra</p>
+    </div>
+
+    <button class="btn btn-primary btn-checkout" (click)="goToCheckout()">
+      <i class="fa-solid fa-lock"></i>
+      FINALIZAR TU COMPRA
+    </button>
+
+    <button class="btn btn-ghost btn-continue" (click)="close()">Seguir comprando</button>
+  </div>
+</aside>

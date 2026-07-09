@@ -9,5 +9,7 @@ public class MarcaResponseDTO {
     private Long id;
     private String name;
     private String slug;
+    private String description;
     private String logoUrl;
+    private Boolean isActive;
 }

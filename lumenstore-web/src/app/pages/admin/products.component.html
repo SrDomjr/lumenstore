@@ -2,55 +2,225 @@
   <div class="header-panel">
     <div>
       <span class="eyebrow">Catálogo</span>
-      <h1>Productos ({{ products.length }})</h1>
+      <h1>Productos ({{ allProducts.length }})</h1>
     </div>
-    <button class="btn btn-primary" (click)="create()">+ Crear producto</button>
+    <button class="btn btn-primary" (click)="create()">Crear producto</button>
   </div>
 
   <div *ngIf="loading" class="loading-panel">Cargando productos...</div>
-  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
 
-  <div class="table-wrap" *ngIf="!loading && products.length">
-    <table class="admin-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Precio</th>
-          <th>Stock</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let p of products">
-          <td class="cell-id">#{{ p.id }}</td>
-          <td class="cell-name">
-            <strong>{{ p.name || p.title || p.nombre }}</strong>
-            <small *ngIf="p.sku" class="text-muted">SKU: {{ p.sku }}</small>
-          </td>
-          <td class="cell-price">S/. {{ p.price || p.basePrice | number: '1.2-2' }}</td>
-          <td class="cell-stock">{{ p.stock ?? '—' }}</td>
-          <td class="cell-status">
-            <span
-              class="badge"
-              [class.badge-success]="p.isActive"
-              [class.badge-danger]="!p.isActive"
+  <div *ngIf="error && !loading" class="alert alert-danger">{{ error }}</div>
+
+  <div *ngIf="!loading && !error">
+    <!-- ─── Search & Filters Bar ─────────────────────────────── -->
+    <div class="filters-bar">
+      <div class="search-field">
+        <input
+          type="text"
+          placeholder="Buscar por nombre o SKU..."
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="onSearchChange()"
+          class="search-input"
+        />
+        <span class="search-icon">🔍</span>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-checkbox">
+          <input
+            type="checkbox"
+            [(ngModel)]="filterStockLow"
+            (ngModelChange)="onFilterStockLowChange()"
+          />
+          <span>Stock bajo (<10)</span>
+        </label>
+      </div>
+
+      <div class="filter-group status-filters">
+        <button
+          class="filter-btn"
+          [class.active]="filterStatus === 'all'"
+          (click)="onFilterStatusChange('all')"
+        >
+          Todos
+        </button>
+        <button
+          class="filter-btn"
+          [class.active]="filterStatus === 'active'"
+          (click)="onFilterStatusChange('active')"
+        >
+          Activos
+        </button>
+        <button
+          class="filter-btn"
+          [class.active]="filterStatus === 'inactive'"
+          (click)="onFilterStatusChange('inactive')"
+        >
+          Inactivos
+        </button>
+      </div>
+
+      <button *ngIf="hasActiveFilters" class="clear-filters-btn" (click)="clearFilters()">
+        Limpiar filtros
+      </button>
+    </div>
+
+    <!-- ─── Bulk Actions Bar (hidden until selection) ───────── -->
+    <div class="bulk-bar" [class.bulk-visible]="selectedCount > 0">
+      <span class="bulk-count">{{ selectedCount }} seleccionado(s)</span>
+      <button
+        class="bulk-action-btn"
+        [class.muted]="allSelectedActive"
+        [class.primary]="!allSelectedActive && !allSelectedInactive"
+        (click)="bulkToggleActive(true)"
+      >
+        Activar
+      </button>
+      <button
+        class="bulk-action-btn"
+        [class.muted]="allSelectedInactive"
+        [class.primary]="allSelectedActive || (!allSelectedActive && !allSelectedInactive)"
+        (click)="bulkToggleActive(false)"
+      >
+        Desactivar
+      </button>
+      <button class="bulk-action-btn bulk-delete" (click)="bulkDelete()">Eliminar</button>
+    </div>
+
+    <!-- ─── Table ───────────────────────────────────────────── -->
+    <div class="table-wrap" *ngIf="filteredProducts.length > 0">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th class="cell-check">
+              <input type="checkbox" [checked]="selectAllChecked" (change)="toggleSelectAll()" />
+            </th>
+            <th class="cell-id">ID</th>
+            <th class="cell-name">Nombre</th>
+            <th class="cell-price sortable" (click)="toggleSort('price')">
+              Precio <span class="sort-icon">{{ getSortIcon('price') }}</span>
+            </th>
+            <th class="cell-stock sortable" (click)="toggleSort('stock')">
+              Stock <span class="sort-icon">{{ getSortIcon('stock') }}</span>
+            </th>
+            <th class="cell-status">ESTADO</th>
+            <th class="cell-actions">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let p of pagedProducts"
+            [class.row-inactive]="!p.isActive"
+            [class.row-selected]="isSelected(p.id)"
+          >
+            <td class="cell-check">
+              <input type="checkbox" [checked]="isSelected(p.id)" (change)="toggleSelect(p.id)" />
+            </td>
+            <td class="cell-id">#{{ p.id }}</td>
+            <td class="cell-name">
+              <a
+                class="product-link"
+                [routerLink]="getStoreUrl(p.slug)"
+                target="_blank"
+                title="Ver en tienda"
+              >
+                <strong>{{ p.name || p.title || p.nombre }}</strong>
+              </a>
+              <small class="text-muted">SKU: {{ p.sku || 'N/A' }}</small>
+            </td>
+            <td class="cell-price">
+              <span class="price-range">{{ formatPriceRange(p) }}</span>
+            </td>
+            <td class="cell-stock">
+              <span class="stock-value">{{ p.stock ?? '—' }}</span>
+              <span *ngIf="isLowStock(p.stock)" class="low-stock-badge">Bajo Stock</span>
+            </td>
+            <td class="cell-status">
+              <button
+                class="status-toggle"
+                [class.active]="p.isActive"
+                [class.toggling]="togglingStatus.has(p.id)"
+                (click)="toggleStatus(p)"
+                [disabled]="togglingStatus.has(p.id)"
+              >
+                <span class="status-dot" [class.active]="p.isActive"></span>
+                {{ p.isActive ? 'Activo' : 'Inactivo' }}
+              </button>
+            </td>
+            <td class="cell-actions">
+              <button class="action-link" (click)="edit(p.id)">Editar</button>
+              <button class="action-link text-danger" (click)="confirmDelete(p.id)">
+                Eliminar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ─── Pagination ────────────────────────────────────── -->
+      <div class="pagination-bar">
+        <div class="pagination-info">
+          Mostrando {{ startItem }}-{{ endItem }} de {{ filteredProducts.length }} productos
+        </div>
+        <div class="pagination-controls">
+          <label class="page-size-label">
+            Por página:
+            <select [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
+              <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
+            </select>
+          </label>
+          <div class="page-nav">
+            <button class="page-btn" [disabled]="currentPage === 0" (click)="goToPage(0)">«</button>
+            <button
+              class="page-btn"
+              [disabled]="currentPage === 0"
+              (click)="goToPage(currentPage - 1)"
             >
-              {{ p.isActive ? 'Activo' : 'Inactivo' }}
-            </span>
-          </td>
-          <td class="cell-actions">
-            <button class="btn btn-sm btn-secondary" (click)="edit(p.id)">Editar</button>
-            <button class="btn btn-sm btn-danger" (click)="deleteProduct(p.id)">Eliminar</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+              ‹
+            </button>
+            <span class="page-indicator">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
+            <button
+              class="page-btn"
+              [disabled]="currentPage >= totalPages - 1"
+              (click)="goToPage(currentPage + 1)"
+            >
+              ›
+            </button>
+            <button
+              class="page-btn"
+              [disabled]="currentPage >= totalPages - 1"
+              (click)="goToPage(totalPages - 1)"
+            >
+              »
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <div *ngIf="!loading && !products.length" class="empty-state">
-    <p>No hay productos disponibles.</p>
-    <button class="btn btn-primary" (click)="create()">Crear el primer producto</button>
+    <div *ngIf="!loading && !error && filteredProducts.length === 0" class="empty-state">
+      <p *ngIf="hasActiveFilters">No se encontraron productos con los filtros aplicados.</p>
+      <p *ngIf="!hasActiveFilters">No hay productos disponibles.</p>
+      <button class="btn btn-primary" (click)="create()">Crear el primer producto</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Delete Confirmation Modal ──────────────────────────── -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="cancelDelete()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <p class="modal-message">
+      <ng-container *ngIf="deleteMultipleMode">
+        ¿Estás seguro de que deseas eliminar los {{ selectedCount }} productos seleccionados?
+      </ng-container>
+      <ng-container *ngIf="!deleteMultipleMode">
+        ¿Estás seguro de que deseas eliminar este producto?
+      </ng-container>
+    </p>
+    <p class="modal-warning">Esta acción no se puede deshacer.</p>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" (click)="cancelDelete()">Cancelar</button>
+      <button class="modal-btn modal-btn-danger" (click)="executeDelete()">Eliminar</button>
+    </div>
   </div>
 </div>

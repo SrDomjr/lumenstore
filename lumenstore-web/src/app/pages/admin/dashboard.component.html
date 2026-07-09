@@ -1,31 +1,59 @@
-<div class="admin-dashboard container">
-  <section class="dashboard-hero">
-    <div class="hero-copy">
-      <span class="eyebrow">Panel de administración</span>
-      <h1>Admin de Lumenstore</h1>
-      <p>Controla el catálogo, los pedidos y los usuarios desde una interfaz clara y refinada.</p>
-    </div>
-    <div class="hero-actions">
-      <a routerLink="/admin/products" class="btn btn-primary">Ver productos</a>
-      <a routerLink="/admin/orders" class="btn btn-secondary">Ver pedidos</a>
-    </div>
-  </section>
+<!-- ─── SECCIÓN DE BIENVENIDA + KPIs ─── -->
+<section class="admin-hero">
+  <div class="hero-text">
+    <span class="eyebrow">Panel de administración</span>
+    <h1>Admin de Lumenstore</h1>
+  </div>
 
-  <section class="stats-grid">
-    <a routerLink="/admin/products" class="stat-card">
-      <p class="stat-label">Productos</p>
-      <h2>Gestión</h2>
-      <span>Editar catálogo y stock</span>
-    </a>
-    <a routerLink="/admin/orders" class="stat-card">
-      <p class="stat-label">Pedidos</p>
-      <h2>Seguimiento</h2>
-      <span>Revisar estados y procesar envíos</span>
-    </a>
-    <a routerLink="/admin/users" class="stat-card">
-      <p class="stat-label">Usuarios</p>
-      <h2>Perfil</h2>
-      <span>Ver clientes y sus cuentas</span>
-    </a>
-  </section>
-</div>
+  <div class="kpi-group">
+    <div class="kpi-card" *ngFor="let kpi of kpis">
+      <span class="kpi-label">{{ kpi.label }}</span>
+      <span class="kpi-value">
+        <ng-container *ngIf="kpi.isCurrency">S/. </ng-container>
+        {{ kpi.value }}
+      </span>
+      <span class="kpi-trend" *ngIf="kpi.trend === 'up'">↑</span>
+      <span class="kpi-trend down" *ngIf="kpi.trend === 'down'">↓</span>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CONTENIDO DEL DASHBOARD ─── -->
+<section class="dashboard-content">
+  <!-- Gráfico de ingresos -->
+  <div class="chart-section">
+    <h2>Ingresos de los últimos 7 días</h2>
+    <div class="chart-container">
+      <canvas id="revenueChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Últimos movimientos -->
+  <div class="table-section">
+    <h2>Últimos Movimientos</h2>
+    <table class="recent-orders-table">
+      <thead>
+        <tr>
+          <th>ID Pedido</th>
+          <th>Cliente</th>
+          <th>Fecha</th>
+          <th>Total</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let order of recentOrders">
+          <td>{{ order.id }}</td>
+          <td>{{ order.customer }}</td>
+          <td>{{ order.date }}</td>
+          <td>S/. {{ order.total }}</td>
+          <td>
+            <span class="status" [ngClass]="order.statusClass">
+              {{ order.status }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
