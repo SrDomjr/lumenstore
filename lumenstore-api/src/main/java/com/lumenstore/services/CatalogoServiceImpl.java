@@ -1,6 +1,7 @@
 package com.lumenstore.services;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -28,6 +29,19 @@ public class CatalogoServiceImpl implements CatalogoService {
         return categoriaRepository.findByIsActiveTrueOrderBySortOrderAsc()
                 .stream()
                 .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CategoriaResponseDTO> getCategoryTree() {
+        List<Categoria> all = categoriaRepository.findByIsActiveTrueOrderBySortOrderAsc();
+        Map<Long, List<Categoria>> byParent = all.stream()
+                .filter(c -> c.getParent() != null)
+                .collect(Collectors.groupingBy(c -> c.getParent().getId()));
+        return all.stream()
+                .filter(c -> c.getParent() == null)
+                .map(root -> toDtoWithChildren(root, byParent))
                 .collect(Collectors.toList());
     }
 
@@ -82,7 +96,18 @@ public class CatalogoServiceImpl implements CatalogoService {
                 .description(categoria.getDescription())
                 .imageUrl(categoria.getImageUrl())
                 .isActive(categoria.getIsActive())
+                .parentId(categoria.getParent() != null ? categoria.getParent().getId() : null)
+                .sortOrder(categoria.getSortOrder())
                 .build();
+    }
+
+    private CategoriaResponseDTO toDtoWithChildren(Categoria categoria, Map<Long, List<Categoria>> byParent) {
+        CategoriaResponseDTO dto = toDto(categoria);
+        List<Categoria> children = byParent.getOrDefault(categoria.getId(), List.of());
+        dto.setChildren(children.stream()
+                .map(child -> toDtoWithChildren(child, byParent))
+                .collect(Collectors.toList()));
+        return dto;
     }
 
     private MarcaResponseDTO toBrandDto(Marca marca) {

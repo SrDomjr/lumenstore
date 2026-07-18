@@ -1,0 +1,20 @@
+-- =============================================
+-- Migración: Almacenar public_id de Cloudinary
+-- =============================================
+--
+-- A partir de esta versión, la columna `image_url` almacenará
+-- ÚNICAMENTE el `public_id` de Cloudinary (NO la URL completa).
+--
+-- Ejemplo de valor en image_url:
+--   "lumenstore/products/12/34/5_main"
+--
+-- La URL completa de Cloudinary se construye al vuelo desde el
+-- frontend usando el cloud_name y el public_id.
+--
+-- =============================================
+
+-- No se requieren cambios de esquema porque la columna image_url
+-- ya existe y su tamaño VARCHAR(255) es suficiente para almacenar
+-- el public_id (ej: "lumenstore/products/12/34/5_main" ≈ 35 chars).
+--
+-- Simplemente se cambia la semántica de uso: image_url = public_id.

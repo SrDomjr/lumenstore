@@ -16,4 +16,10 @@ public interface ICategoriaRepository extends JpaRepository<Categoria, Long> {
     // Buscar por slug (útil para las URLs amigables del Frontend, ej: /categorias/electronica)
     Optional<Categoria> findBySlug(String slug);
 
+    boolean existsByNameIgnoreCase(String name);
+
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
+
+    boolean existsBySlugIgnoreCaseAndIdNot(String slug, Long id);
+
 }

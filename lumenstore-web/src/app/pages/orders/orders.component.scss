@@ -1,26 +1,221 @@
-.orders-container {
-  max-width: 1200px;
+.page {
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 30px 20px;
+  padding: 48px 24px 100px;
+}
 
-  h1 {
-    font-size: 32px;
-    margin-bottom: 30px;
-    color: #333;
-  }
+h1 {
+  font-size: 26px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
 
-  table {
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-  }
+.subtitle {
+  color: var(--gray-mid);
+  font-size: 13.5px;
+  margin-bottom: 36px;
+}
 
-  a {
-    color: #667eea;
-    text-decoration: none;
+/* ===== TABS ===== */
+.tabs {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1px solid var(--gray-border);
+  margin-bottom: 8px;
+}
 
-    &:hover {
-      text-decoration: underline;
+.tab {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--gray-mid);
+  padding: 14px 2px;
+  cursor: pointer;
+  position: relative;
+
+  &.active {
+    color: var(--black);
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 2px;
+      background: var(--black);
     }
+  }
+}
+
+/* ===== TOOLBAR ===== */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 24px 0 28px;
+  gap: 16px;
+}
+
+.search-order {
+  border: none;
+  border-bottom: 1px solid var(--gray-border);
+  font-size: 13px;
+  padding: 8px 0;
+  width: 260px;
+  background: transparent;
+  font-family: inherit;
+
+  &::placeholder {
+    color: var(--gray-mid);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--black);
+  }
+}
+
+.date-select {
+  border: 1px solid var(--gray-border);
+  background: var(--white);
+  font-size: 12.5px;
+  padding: 9px 12px;
+  color: var(--black);
+  font-family: inherit;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: var(--black);
+  }
+}
+
+/* ===== ORDER CARDS ===== */
+.order-card {
+  border: 1px solid var(--gray-border);
+  padding: 24px;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--black);
+  }
+}
+
+.order-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.order-number {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  margin-bottom: 4px;
+}
+
+.order-meta {
+  font-size: 12.5px;
+  color: var(--gray-mid);
+}
+
+.order-items-count {
+  font-size: 12.5px;
+  color: var(--gray-mid);
+  margin-top: 4px;
+}
+
+.order-status-col {
+  text-align: right;
+  flex-shrink: 0;
+  min-width: 150px;
+}
+
+.status-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  margin-bottom: 8px;
+}
+
+.status-pending {
+  background: var(--gray-light);
+  color: var(--gray-mid);
+}
+
+.status-processing {
+  background: var(--gray-light);
+  color: var(--black);
+}
+
+.status-shipped {
+  background: var(--black);
+  color: var(--white);
+}
+
+.status-delivered {
+  background: #eaf3ec;
+  color: #2f6b3a;
+}
+
+.status-cancelled {
+  background: var(--gray-light);
+  color: var(--gray-mid);
+  text-decoration: line-through;
+}
+
+.order-total {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.chevron {
+  color: var(--gray-mid);
+  font-size: 18px;
+  margin-left: 8px;
+}
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--gray-mid);
+
+  p {
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 700px) {
+  .order-card {
+    flex-wrap: wrap;
+  }
+
+  .order-status-col {
+    text-align: left;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-order {
+    width: 100%;
   }
 }

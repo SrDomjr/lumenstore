@@ -1,0 +1,669 @@
+<!-- ═══════════════════════════════════════════ -->
+<!--  SALES DETAIL – H&M INSPIRED              -->
+/* Layout: 2/3 content + 1/3 sidebar */
+<!-- ═══════════════════════════════════════════ -->
+<div class="sales-detail">
+  <!-- ── Back ── -->
+  <a routerLink="/admin/sales" class="back-link">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.5"
+    >
+      <path d="M7 4l-4 4m0 0l4 4m-4-4h14" />
+    </svg>
+    Volver a pedidos
+  </a>
+
+  <!-- ── Loading Skeletons ── -->
+  <ng-container *ngIf="loading">
+    <div class="skeleton-detail">
+      <div class="skeleton-sidebar">
+        <div class="skeleton-block"></div>
+        <div class="skeleton-block"></div>
+        <div class="skeleton-block"></div>
+      </div>
+      <div class="skeleton-main">
+        <div class="skeleton-block" style="height: 120px"></div>
+        <div class="skeleton-block" style="height: 200px; margin-top: 16px"></div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ── Main Content ── -->
+  <ng-container *ngIf="!loading && order">
+    <div class="detail-layout">
+      <!-- ══ SIDEBAR (Right) ══ -->
+      <aside class="detail-sidebar">
+        <!-- Order Info Card -->
+        <div class="sidebar-card">
+          <h3 class="sidebar-card-title">Resumen</h3>
+          <div class="info-row">
+            <span class="info-label"># Pedido</span>
+            <div class="info-value-group">
+              <span class="info-value">{{ order.orderNumber }}</span>
+              <button
+                class="copy-btn-sm"
+                (click)="copyToClipboard(order.orderNumber, 'order')"
+                title="Copiar"
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <rect x="4" y="4" width="12" height="14" rx="1.5" />
+                  <path d="M8 2h6a2 2 0 012 2v10" />
+                </svg>
+              </button>
+              <span *ngIf="copiedField === 'order'" class="copied-tooltip">Copiado</span>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Cliente</span>
+            <span class="info-value">{{ order.customerName || '—' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Fecha</span>
+            <span class="info-value">{{ order.createdAt | date: 'dd MMM yyyy, HH:mm' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Método</span>
+            <span class="info-value payment-method-label">{{ order.paymentMethod }}</span>
+          </div>
+          <div class="info-row" *ngIf="order.notes">
+            <span class="info-label">Notas</span>
+            <span class="info-value notes-text">{{ order.notes }}</span>
+          </div>
+        </div>
+
+        <!-- Status Machine (Stepper) -->
+        <div class="sidebar-card">
+          <h3 class="sidebar-card-title">Estado del Pedido</h3>
+          <div class="status-stepper">
+            <div
+              *ngFor="let step of statusSteps; let i = index"
+              class="stepper-step"
+              [class.completed]="isStepCompleted(step)"
+              [class.current]="isStepCurrent(step)"
+              [class.future]="!isStepCompleted(step) && !isStepCurrent(step)"
+            >
+              <div class="step-indicator">
+                <div class="step-dot">
+                  <svg
+                    *ngIf="isStepCompleted(step) && !isStepCurrent(step)"
+                    width="10"
+                    height="10"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div *ngIf="i < statusSteps.length - 1" class="step-line"></div>
+              </div>
+              <div class="step-content">
+                <span class="step-label">{{ statusConfig[step].label }}</span>
+                <span *ngIf="isStepCurrent(step)" class="step-badge-current">Actual</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Transition Actions -->
+          <div *ngIf="allowedTransitions.length > 0" class="transition-group">
+            <label class="transition-label">Cambiar a:</label>
+            <div class="transition-buttons">
+              <button
+                *ngFor="let ns of allowedTransitions"
+                class="btn btn-sm"
+                [class.btn-primary]="ns === 'paid' || ns === 'processing'"
+                [class.btn-outline]="ns !== 'paid' && ns !== 'processing'"
+                [class.btn-danger]="ns === 'cancelled'"
+                (click)="transitionTo(ns)"
+              >
+                {{ statusConfig[ns].label }}
+              </button>
+            </div>
+          </div>
+          <div *ngIf="isReadOnly" class="read-only-badge">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fill-rule="evenodd"
+                d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Pedido {{ currentStatus === 'cancelled' ? 'cancelado' : 'entregado' }} — solo lectura
+          </div>
+        </div>
+
+        <!-- Financial Summary -->
+        <div class="sidebar-card">
+          <h3 class="sidebar-card-title">Financiero</h3>
+          <div class="finance-row">
+            <span>Subtotal</span>
+            <span>{{ order.subtotal | currency: 'PEN' : 'symbol' : '1.2-2' }}</span>
+          </div>
+          <div class="finance-row" *ngIf="order.discountAmount > 0">
+            <span>Descuento</span>
+            <span class="finance-discount"
+              >-{{ order.discountAmount | currency: 'PEN' : 'symbol' : '1.2-2' }}</span
+            >
+          </div>
+          <div class="finance-row">
+            <span>Envío</span>
+            <span>{{ order.shippingCost | currency: 'PEN' : 'symbol' : '1.2-2' }}</span>
+          </div>
+          <div class="finance-divider"></div>
+          <div class="finance-row finance-total">
+            <span>Total</span>
+            <span>{{ order.total | currency: 'PEN' : 'symbol' : '1.2-2' }}</span>
+          </div>
+        </div>
+
+        <!-- Voucher Generator -->
+        <div class="sidebar-card">
+          <h3 class="sidebar-card-title">Comprobante</h3>
+
+          <div *ngIf="vouchers.length > 0" class="voucher-list">
+            <div *ngFor="let v of vouchers" class="voucher-item">
+              <div class="voucher-info">
+                <span class="voucher-type-badge">{{ v.voucherType }}</span>
+                <span class="voucher-serie">{{ v.series }}-{{ v.number }}</span>
+              </div>
+              <button class="btn-icon-sm" (click)="downloadVoucher(v.id)" title="Descargar PDF">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <path d="M4 16v1a2 2 0 002 2h8a2 2 0 002-2v-1M7 10l3 3m0 0l3-3m-3 3V4" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="voucher-generator">
+            <select [(ngModel)]="selectedVoucherType" class="voucher-select">
+              <option value="boleta">Boleta</option>
+              <option value="factura">Factura</option>
+              <option value="nota_credito">Nota de Crédito</option>
+            </select>
+            <div *ngIf="voucherTypeWarning" class="voucher-warning">
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fill-rule="evenodd"
+                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              {{ voucherTypeWarning }}
+            </div>
+            <button
+              class="btn btn-primary btn-sm"
+              [disabled]="!canGenerateVoucher || voucherLoading"
+              (click)="generateVoucher()"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path
+                  d="M9 12h2m0 0h2m-2 0v2m0-2v-2m-9 7h14a1 1 0 001-1V8a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1zM3 5V4a1 1 0 011-1h12a1 1 0 011 1v1"
+                />
+              </svg>
+              {{ voucherLoading ? 'Generando…' : 'Generar' }}
+            </button>
+          </div>
+          <div *ngIf="voucherError" class="alert alert-danger" style="margin-top: 8px">
+            {{ voucherError }}
+          </div>
+        </div>
+      </aside>
+
+      <!-- ══ MAIN CONTENT (Left) ══ -->
+      <main class="detail-main">
+        <!-- Header with Status Badge -->
+        <div class="detail-header">
+          <div class="header-left">
+            <h1 class="detail-title">Pedido {{ order.orderNumber }}</h1>
+            <span class="status-badge-lg" [ngClass]="statusConfig[currentStatus].color">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path [attr.d]="statusConfig[currentStatus].icon" />
+              </svg>
+              {{ statusConfig[currentStatus].label }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-bar">
+          <button
+            class="tab-btn"
+            [class.active]="activeTab === 'items'"
+            (click)="activeTab = 'items'"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+            Productos ({{ items.length }})
+          </button>
+          <button
+            class="tab-btn"
+            [class.active]="activeTab === 'shipments'"
+            (click)="activeTab = 'shipments'"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Envíos ({{ shipments.length }})
+          </button>
+          <button
+            class="tab-btn"
+            [class.active]="activeTab === 'payments'"
+            (click)="activeTab = 'payments'"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path
+                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+              />
+            </svg>
+            Pagos ({{ payments.length }})
+          </button>
+        </div>
+
+        <!-- ══ TAB: Items / Picking List ══ -->
+        <div *ngIf="activeTab === 'items'" class="tab-content">
+          <div class="items-table-wrapper">
+            <table class="table items-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>SKU</th>
+                  <th>Variant</th>
+                  <th class="th-qty">Cant.</th>
+                  <th class="th-price">P. Unit.</th>
+                  <th class="th-discount">Desc.</th>
+                  <th class="th-subtotal">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of items; trackBy: trackById">
+                  <td class="td-product">
+                    <div class="product-info-cell">
+                      <div class="product-thumb" *ngIf="item.imageUrl">
+                        <img [src]="item.imageUrl" [alt]="item.productName" />
+                      </div>
+                      <div class="product-thumb placeholder-thumb" *ngIf="!item.imageUrl">
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          stroke="#bbb"
+                          stroke-width="1.2"
+                        >
+                          <rect x="3" y="3" width="14" height="14" rx="1" />
+                          <circle cx="8" cy="8" r="1.5" />
+                          <path d="M3 14l4-4 3 3 2-2 5 5" />
+                        </svg>
+                      </div>
+                      <span class="product-name">{{
+                        item.productName || 'Producto #' + item.variantId
+                      }}</span>
+                    </div>
+                  </td>
+                  <td class="td-sku">
+                    <div class="sku-group">
+                      <span class="sku-text">{{ item.sku || '—' }}</span>
+                      <button
+                        *ngIf="item.sku"
+                        class="copy-btn-sm"
+                        (click)="copyToClipboard(item.sku!, 'sku-' + item.variantId)"
+                        title="Copiar SKU"
+                      >
+                        <svg
+                          width="11"
+                          height="11"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                        >
+                          <rect x="4" y="4" width="12" height="14" rx="1.5" />
+                          <path d="M8 2h6a2 2 0 012 2v10" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                  <td class="td-variant">
+                    <span class="variant-chip" *ngIf="item.colorName">
+                      <span class="color-dot" [style.background]="item.colorHex || '#ccc'"></span>
+                      {{ item.colorName }}
+                    </span>
+                    <span class="variant-chip" *ngIf="item.sizeName">{{ item.sizeName }}</span>
+                    <span *ngIf="!item.colorName && !item.sizeName">—</span>
+                  </td>
+                  <td class="td-qty">{{ item.quantity }}</td>
+                  <td class="td-price">
+                    {{ item.unitPrice | currency: 'PEN' : 'symbol' : '1.2-2' }}
+                  </td>
+                  <td class="td-discount">
+                    <span *ngIf="item.discountAmount > 0" class="discount-amount"
+                      >-{{ item.discountAmount | currency: 'PEN' : 'symbol' : '1.2-2' }}</span
+                    >
+                    <span *ngIf="!item.discountAmount">—</span>
+                  </td>
+                  <td class="td-subtotal">
+                    {{ item.subtotal | currency: 'PEN' : 'symbol' : '1.2-2' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ══ TAB: Shipments ══ -->
+        <div *ngIf="activeTab === 'shipments'" class="tab-content">
+          <!-- Existing shipments -->
+          <div *ngIf="shipments.length === 0" class="empty-section">
+            <p>No hay envíos registrados para este pedido.</p>
+          </div>
+
+          <div *ngFor="let shipment of shipments; trackBy: trackById" class="shipment-card">
+            <div class="shipment-header">
+              <div class="shipment-carrier">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <strong>{{ shipment.carrier }}</strong>
+              </div>
+              <span class="status-badge" [ngClass]="shipmentConfig[shipment.status].color">
+                {{ shipmentConfig[shipment.status].label }}
+              </span>
+            </div>
+            <div class="shipment-body">
+              <div class="shipment-detail-row">
+                <span class="detail-label">Tracking</span>
+                <div class="detail-value-group">
+                  <span class="tracking-number">{{ shipment.trackingNumber }}</span>
+                  <button
+                    class="copy-btn-sm"
+                    (click)="copyToClipboard(shipment.trackingNumber, 'track-' + shipment.id)"
+                    title="Copiar tracking"
+                  >
+                    <svg
+                      width="11"
+                      height="11"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    >
+                      <rect x="4" y="4" width="12" height="14" rx="1.5" />
+                      <path d="M8 2h6a2 2 0 012 2v10" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="shipment-detail-row">
+                <span class="detail-label">Enviado</span>
+                <span>{{
+                  shipment.shippedAt ? (shipment.shippedAt | date: 'dd MMM yyyy') : '—'
+                }}</span>
+              </div>
+              <div class="shipment-detail-row" *ngIf="shipment.status === 'delivered'">
+                <span class="detail-label">Entregado</span>
+                <span>{{ shipment.deliveredAt | date: 'dd MMM yyyy' }}</span>
+              </div>
+            </div>
+            <div class="shipment-actions" *ngIf="!isReadOnly">
+              <button
+                *ngIf="canMarkInTransit(shipment)"
+                class="btn btn-sm btn-outline"
+                (click)="updateShipmentStatus(shipment, 'in_transit')"
+              >
+                Marcar en tránsito
+              </button>
+              <button
+                *ngIf="canMarkDelivered(shipment)"
+                class="btn btn-sm btn-primary"
+                (click)="updateShipmentStatus(shipment, 'delivered')"
+              >
+                Marcar entregado
+              </button>
+            </div>
+          </div>
+
+          <!-- Add Shipment Form -->
+          <div *ngIf="canAddShipment" class="add-shipment-area">
+            <button
+              *ngIf="!showShipmentForm"
+              class="btn btn-outline btn-sm"
+              (click)="toggleShipmentForm()"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path d="M10 5v10m5-5H5" />
+              </svg>
+              Agregar envío
+            </button>
+
+            <div *ngIf="showShipmentForm" class="shipment-form">
+              <h4 class="form-title">Nuevo Envío</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Transportista *</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="newShipment.carrier"
+                    placeholder="Ej: Olva, Shalom, DHL"
+                    class="form-input"
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">N° de Rastreo *</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="newShipment.trackingNumber"
+                    placeholder="Ej: 1Z999AA10123456784"
+                    class="form-input"
+                  />
+                </div>
+              </div>
+              <div *ngIf="shipmentError" class="alert alert-danger" style="margin-top: 8px">
+                {{ shipmentError }}
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary btn-sm" (click)="saveShipment()">Guardar</button>
+                <button class="btn btn-outline btn-sm" (click)="toggleShipmentForm()">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ TAB: Payments & Vouchers ══ -->
+        <div *ngIf="activeTab === 'payments'" class="tab-content">
+          <!-- Failed Payments Alert -->
+          <div *ngIf="failedPayments.length > 0" class="failed-payments-alert">
+            <div class="alert-header">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fill-rule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              <span>{{ failedPayments.length }} transacción(es) fallida(s)</span>
+            </div>
+          </div>
+
+          <!-- Payment List -->
+          <div *ngIf="payments.length === 0" class="empty-section">
+            <p>No hay transacciones de pago registradas.</p>
+          </div>
+
+          <div *ngFor="let payment of payments; trackBy: trackById" class="payment-card">
+            <div class="payment-header">
+              <div class="payment-meta">
+                <span class="payment-method-badge">{{ payment.paymentMethod }}</span>
+                <span class="payment-transaction-id">{{ payment.transactionId }}</span>
+                <button
+                  class="copy-btn-sm"
+                  (click)="copyToClipboard(payment.transactionId, 'pay-' + payment.id)"
+                  title="Copiar ID"
+                >
+                  <svg
+                    width="11"
+                    height="11"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <rect x="4" y="4" width="12" height="14" rx="1.5" />
+                    <path d="M8 2h6a2 2 0 012 2v10" />
+                  </svg>
+                </button>
+              </div>
+              <span class="status-badge" [ngClass]="paymentConfig[payment.status].color">
+                {{ paymentConfig[payment.status].label }}
+              </span>
+            </div>
+            <div class="payment-body">
+              <div class="payment-row">
+                <span class="payment-label">Monto</span>
+                <span class="payment-amount">{{
+                  payment.amount | currency: 'PEN' : 'symbol' : '1.2-2'
+                }}</span>
+              </div>
+              <div class="payment-row">
+                <span class="payment-label">Fecha</span>
+                <span>{{ payment.createdAt | date: 'dd MMM yyyy, HH:mm' }}</span>
+              </div>
+
+              <!-- JSON Viewer (collapsible) -->
+              <div *ngIf="payment.responseData" class="json-section">
+                <button class="json-toggle" (click)="toggleJson(payment.id)">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path d="M5 8l5 5 5-5" />
+                  </svg>
+                  Datos de respuesta
+                </button>
+                <pre
+                  *ngIf="expandedPaymentId === payment.id"
+                  class="json-viewer"
+                ><code>{{ parseJson(payment.responseData) }}</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Linked Vouchers -->
+          <div *ngIf="vouchers.length > 0" class="vouchers-section">
+            <h4 class="section-subtitle">Comprobantes vinculados</h4>
+            <div *ngFor="let v of vouchers" class="voucher-linked">
+              <div class="voucher-left">
+                <span class="voucher-type-badge-lg">{{ v.voucherType }}</span>
+                <span class="voucher-serie-lg">{{ v.series }}-{{ v.number }}</span>
+              </div>
+              <button class="btn btn-outline btn-sm" (click)="downloadVoucher(v.id)">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <path d="M4 16v1a2 2 0 002 2h8a2 2 0 002-2v-1M7 10l3 3m0 0l3-3m-3 3V4" />
+                </svg>
+                PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </ng-container>
+
+  <!-- ── Error State ── -->
+  <div *ngIf="!loading && !order && error" class="empty-state" style="margin-top: 40px">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="1">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M16 16s-1.5-2-4-2-4 2-4 2M9 9h.01M15 9h.01" />
+    </svg>
+    <p>{{ error }}</p>
+    <a routerLink="/admin/sales" class="btn btn-outline" style="margin-top: 16px"
+      >Volver a pedidos</a
+    >
+  </div>
+</div>

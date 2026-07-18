@@ -8,7 +8,9 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
+import { CloudinaryUrlPipe } from '../../pipes/cloudinary-url.pipe';
 import { CartService } from '../../services/cart.service';
 import { NotificationService } from '../../services/notification.service';
 import { CarritoItem } from '../../models';
@@ -16,7 +18,7 @@ import { CarritoItem } from '../../models';
 @Component({
   selector: 'app-cart-drawer',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, CloudinaryUrlPipe],
   templateUrl: './cart-drawer.component.html',
   styleUrls: ['./cart-drawer.component.scss'],
 })
@@ -30,8 +32,11 @@ export class CartDrawerComponent implements AfterViewInit {
   readonly cart$ = this.cartService.cart$;
   readonly isOpen$ = this.cartService.drawerOpen$;
 
-  /** Stock máximo por ítem (fallback a 10 mientras se obtiene del backend) */
   maxStock = signal(10);
+  freeShippingThreshold = 150;
+
+  couponOpen = false;
+  couponCode = '';
 
   ngAfterViewInit(): void {
     this.cartService.drawerOpen$.subscribe((open) => {
@@ -41,14 +46,12 @@ export class CartDrawerComponent implements AfterViewInit {
     });
   }
 
-  /** Cierra el drawer al hacer clic en el backdrop */
   onBackdropClick(event: MouseEvent): void {
     if ((event.target as HTMLElement).classList.contains('cart-backdrop')) {
       this.close();
     }
   }
 
-  /** Cierra con tecla Escape */
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.cartService.isDrawerOpen()) {
@@ -60,7 +63,6 @@ export class CartDrawerComponent implements AfterViewInit {
     this.cartService.closeDrawer();
   }
 
-  /** Scroll automático al último ítem agregado */
   private scrollToLastItem(): void {
     const container = this.itemsContainer?.nativeElement;
     if (!container) return;
@@ -73,13 +75,32 @@ export class CartDrawerComponent implements AfterViewInit {
     }
   }
 
-  /** Obtener el subtotal del carrito */
   getSubtotal(cart: { items?: CarritoItem[] } | null): number {
     if (!cart?.items) return 0;
     return cart.items.reduce((sum, item) => sum + item.quantity * (item.price || 0), 0);
   }
 
-  /** Incrementar cantidad (respetando stock máximo) */
+  getTotalDiscount(cart: { items?: CarritoItem[] } | null): number {
+    if (!cart?.items) return 0;
+    return cart.items.reduce((sum, item) => {
+      const compare = item.compareAtPrice || 0;
+      if (compare > item.price) {
+        return sum + (compare - item.price) * item.quantity;
+      }
+      return sum;
+    }, 0);
+  }
+
+  getProgressPercent(cart: { items?: CarritoItem[] } | null): number {
+    const subtotal = this.getSubtotal(cart);
+    return Math.min((subtotal / this.freeShippingThreshold) * 100, 100);
+  }
+
+  getMissingForFreeShipping(cart: { items?: CarritoItem[] } | null): number {
+    const subtotal = this.getSubtotal(cart);
+    return Math.max(this.freeShippingThreshold - subtotal, 0);
+  }
+
   increaseQty(item: CarritoItem): void {
     const clientId = this.cartService.getCurrentCart()?.clienteId;
     if (!clientId) return;
@@ -92,7 +113,6 @@ export class CartDrawerComponent implements AfterViewInit {
       .subscribe({ error: () => this.notification.error('Error al actualizar cantidad') });
   }
 
-  /** Decrementar cantidad (mínimo 1) */
   decreaseQty(item: CarritoItem): void {
     if (item.quantity <= 1) return;
     const clientId = this.cartService.getCurrentCart()?.clienteId;
@@ -102,39 +122,49 @@ export class CartDrawerComponent implements AfterViewInit {
       .subscribe({ error: () => this.notification.error('Error al actualizar cantidad') });
   }
 
-  /** Eliminar ítem con notificación de deshacer */
   removeItem(item: CarritoItem): void {
     const clientId = this.cartService.getCurrentCart()?.clienteId;
     if (!clientId) return;
-
-    const previousCart = this.cartService.getCurrentCart();
-
     this.cartService.removeFromCart(clientId, item.id).subscribe({
-      next: () => {
-        this.notification.info(`"${item.productName}" eliminado`, 'Producto eliminado');
-      },
+      next: () => this.notification.info(`"${item.productName}" eliminado`),
       error: () => this.notification.error('No se pudo eliminar el producto'),
     });
   }
 
-  /** Navegar al checkout */
   goToCheckout(): void {
     this.close();
     this.router.navigate(['/checkout']);
   }
 
-  /** TrackBy para rendimiento en *ngFor */
+  continueShopping(): void {
+    this.close();
+    this.router.navigate(['/store']);
+  }
+
+  toggleCoupon(): void {
+    this.couponOpen = !this.couponOpen;
+  }
+
+  applyCoupon(): void {
+    if (this.couponCode.trim()) {
+      this.notification.info('Cupón aplicado');
+    }
+  }
+
   trackByItemId(_index: number, item: CarritoItem): number {
     return item.id;
   }
 
-  /** Obtener precio comparativo (descuento) del ítem */
   getComparePrice(item: CarritoItem): number | null {
     return item.compareAtPrice ?? null;
   }
 
-  /** Formatear precio en Soles */
+  getDiscountPercent(item: CarritoItem): number | null {
+    if (!item.compareAtPrice || item.compareAtPrice <= item.price) return null;
+    return Math.round(((item.compareAtPrice - item.price) / item.compareAtPrice) * 100);
+  }
+
   formatPrice(price: number): string {
-    return `S/. ${price.toFixed(2)}`;
+    return `S/ ${price.toFixed(2)}`;
   }
 }

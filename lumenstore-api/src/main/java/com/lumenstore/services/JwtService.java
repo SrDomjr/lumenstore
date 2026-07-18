@@ -2,6 +2,7 @@ package com.lumenstore.services;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -14,11 +15,11 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    // Clave secreta de prueba (Mínimo de 256 bits).
-    private static final String SECRET_KEY = "c3ByaW5nLWJvb3QtMy1qd3QtdG9rZW4tc2VjcmV0LWtleS1mb3ItbHVtZW5zdG9yZS1hcGktcHJvZHVjdGlvbg==";
-    
-    // Duración del Token: 10 horas
-    private static final long JWT_EXPIRATION = 1000 * 60 * 60 * 10;
+    @Value("${jwt.secret}")
+    private String secretKey;
+
+    @Value("${jwt.expiration}")
+    private long jwtExpiration;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -34,13 +35,12 @@ public class JwtService {
     }
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
-        // Sintaxis moderna de JJWT 0.12.x usando métodos fluidos
         return Jwts.builder()
                 .claims(extraClaims)
                 .subject(userDetails.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION))
-                .signWith(getSigningKey()) // El algoritmo HS256 se detecta automáticamente por el tamaño de la llave
+                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .signWith(getSigningKey())
                 .compact();
     }
 
@@ -66,7 +66,7 @@ public class JwtService {
     }
 
     private SecretKey getSigningKey() {
-        byte[] keyBytes = SECRET_KEY.getBytes();
+        byte[] keyBytes = secretKey.getBytes();
         return io.jsonwebtoken.security.Keys.hmacShaKeyFor(keyBytes);
     }
 }

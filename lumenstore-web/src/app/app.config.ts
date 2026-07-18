@@ -4,6 +4,8 @@ import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@a
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideToastr } from 'ngx-toastr';
 import { JwtInterceptor } from './interceptors/jwt.interceptor';
+import { CLOUDINARY_CLOUD_NAME } from './pipes/cloudinary-url.pipe';
+import { environment } from '../environments/environment';
 
 import { routes } from './app.routes';
 
@@ -25,5 +27,6 @@ export const appConfig: ApplicationConfig = {
       useClass: JwtInterceptor,
       multi: true,
     },
+    { provide: CLOUDINARY_CLOUD_NAME, useValue: environment.cloudinaryCloudName },
   ],
 };

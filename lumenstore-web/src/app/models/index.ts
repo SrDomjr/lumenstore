@@ -119,6 +119,8 @@ export interface ProductoResponseDTO {
   description: string;
   shortDescription: string;
   sku: string;
+  brandId?: number;
+  categoryId?: number;
   brandName: string;
   categoryName: string;
   basePrice: number;
@@ -127,6 +129,22 @@ export interface ProductoResponseDTO {
   featured: boolean;
   images: string[];
   isActive: boolean;
+  // SEO
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
+  // Atributos adicionales
+  material?: string;
+  weight?: number;
+  dimensions?: string;
+  gender?: string;
+  warranty?: string;
+  manufacturer?: string;
+  countryOfOrigin?: string;
+  // Configuraciones
+  freeShipping?: boolean;
+  isNew?: boolean;
+  visibility?: string;
 }
 
 export interface ProductVariant {
@@ -150,6 +168,10 @@ export interface ProductVariantResponseDTO {
   compareAtPrice: number;
   stock: number;
   isActive: boolean;
+  // Nuevos campos
+  cost?: number;
+  minStock?: number;
+  imageUrl?: string;
 }
 
 export interface ProductImage {

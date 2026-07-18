@@ -6,8 +6,13 @@
 .DS_Store
 Thumbs.db
 
-# Variables
+# Variables de entorno (excepto .env.example que se versiona)
 .env
+.env.*
+!.env.example
 
 # Logs
 *.log
+
+# Uploads de usuarios
+uploads/

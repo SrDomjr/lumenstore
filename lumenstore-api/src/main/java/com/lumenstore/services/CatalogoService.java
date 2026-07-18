@@ -7,6 +7,7 @@ import com.lumenstore.dto.MarcaResponseDTO;
 
 public interface CatalogoService {
     List<CategoriaResponseDTO> getActiveCategories();
+    List<CategoriaResponseDTO> getCategoryTree();
     List<CategoriaResponseDTO> getAllCategories();
     CategoriaResponseDTO getCategoryById(Long id);
     List<MarcaResponseDTO> getActiveBrands();

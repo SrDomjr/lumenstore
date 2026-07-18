@@ -1,0 +1,215 @@
+<!-- ═══════════════════════════════════════════ -->
+<!--  SALES LIST – H&M INSPIRED ADMIN           -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="sales-list admin-fade-in">
+  <!-- ── Page Header ── -->
+  <app-admin-page-header title="Pedidos" [breadcrumb]="[{label:'Admin', link:'/admin/dashboard'}, {label:'Pedidos'}]">
+    <app-admin-button variant="secondary">
+      <i class="fa-solid fa-download"></i> Exportar
+    </app-admin-button>
+  </app-admin-page-header>
+
+  <!-- ── Filter Bar ── -->
+  <div class="filter-bar">
+    <div class="filter-row">
+      <div class="filter-group" style="flex: 1; min-width: 200px">
+        <input
+          type="text"
+          placeholder="Buscar por #orden o cliente…"
+          [(ngModel)]="searchTerm"
+          (input)="applyClientFilter()"
+          class="filter-input"
+        />
+      </div>
+
+      <div class="filter-group">
+        <select [(ngModel)]="statusFilter" class="filter-select">
+          <option value="all">Todos los estados</option>
+          <option *ngFor="let s of statusList" [value]="s">
+            {{ getConfig(s).label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="date-label">Desde</label>
+        <input type="date" [(ngModel)]="startDate" class="filter-input" />
+      </div>
+
+      <div class="filter-group">
+        <label class="date-label">Hasta</label>
+        <input type="date" [(ngModel)]="endDate" class="filter-input" />
+      </div>
+
+      <div class="filter-group filter-actions">
+        <button class="btn btn-primary" (click)="applyFilters()">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path d="M10 18a8 8 0 100-16 8 8 0 000 16z" />
+            <path d="M10 14a1 1 0 01-1-1V9a1 1 0 112 0v4a1 1 0 01-1 1z" />
+            <path d="M10 7a1 1 0 100-2 1 1 0 000 2z" />
+          </svg>
+          Filtrar
+        </button>
+        <button class="btn btn-outline" (click)="clearFilters()">Limpiar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Error Alert ── -->
+  <div
+    *ngIf="error"
+    class="alert alert-danger"
+    style="display: flex; align-items: center; gap: 8px"
+  >
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+      <path
+        fill-rule="evenodd"
+        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+        clip-rule="evenodd"
+      />
+    </svg>
+    <span>{{ error }}</span>
+  </div>
+
+  <!-- ── Loading Skeletons (H&M style) ── -->
+  <div *ngIf="loading" class="skeleton-table">
+    <div class="skeleton-row" *ngFor="let _ of [1, 2, 3, 4, 5]">
+      <div class="skeleton-cell" style="width: 60px"></div>
+      <div class="skeleton-cell" style="width: 120px"></div>
+      <div class="skeleton-cell" style="width: 160px"></div>
+      <div class="skeleton-cell" style="width: 80px"></div>
+      <div class="skeleton-cell" style="width: 100px"></div>
+      <div class="skeleton-cell" style="width: 90px"></div>
+    </div>
+  </div>
+
+  <!-- ── Empty State ── -->
+  <div *ngIf="!loading && filteredOrders.length === 0 && !error" class="empty-state">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="1">
+      <path
+        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+      />
+    </svg>
+    <p>No se encontraron pedidos.</p>
+  </div>
+
+  <!-- ── Table ── -->
+  <div *ngIf="!loading && filteredOrders.length > 0" class="table-wrapper">
+    <table class="table sales-table">
+      <thead>
+        <tr>
+          <th>#Orden</th>
+          <th>Cliente</th>
+          <th>Total</th>
+          <th>Método</th>
+          <th>Estado</th>
+          <th>Fecha</th>
+          <th class="th-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let o of filteredOrders; trackBy: trackById"
+          class="sales-row"
+          (click)="view(o.id)"
+        >
+          <!-- Order Number -->
+          <td class="td-order">
+            <span class="order-number">{{ o.orderNumber }}</span>
+            <button
+              class="copy-btn"
+              (click)="$event.stopPropagation(); copyToClipboard(o.orderNumber)"
+              title="Copiar #orden"
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <rect x="4" y="4" width="12" height="14" rx="1.5" />
+                <path d="M8 2h6a2 2 0 012 2v10" />
+              </svg>
+            </button>
+          </td>
+          <!-- Customer -->
+          <td class="td-customer">
+            <span class="customer-name">{{ o.customerName || '—' }}</span>
+          </td>
+          <!-- Total -->
+          <td class="td-total">
+            <span class="total-amount">{{ o.total | currency: 'PEN' : 'symbol' : '1.2-2' }}</span>
+          </td>
+          <!-- Payment Method -->
+          <td class="td-payment">
+            <span class="payment-badge">{{ o.paymentMethod }}</span>
+          </td>
+          <!-- Status Badge -->
+          <td class="td-status">
+            <span class="status-badge" [ngClass]="getConfig(o.status).color">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path [attr.d]="getConfig(o.status).icon" />
+              </svg>
+              {{ getConfig(o.status).label }}
+            </span>
+          </td>
+          <!-- Date -->
+          <td class="td-date">
+            <span class="date-text">{{ o.createdAt | date: 'dd MMM yyyy, HH:mm' }}</span>
+          </td>
+          <!-- Actions -->
+          <td class="td-actions" (click)="$event.stopPropagation()">
+            <div class="action-group">
+              <ng-container *ngIf="canTransition(o.status).length > 0">
+                <select class="status-select" #st (change)="quickStatus(o.id, st.value)">
+                  <option value="" disabled selected>Cambiar estado</option>
+                  <option *ngFor="let ns of canTransition(o.status)" [value]="ns">
+                    → {{ getConfig(ns).label }}
+                  </option>
+                </select>
+              </ng-container>
+              <button class="btn-icon" (click)="view(o.id)" title="Ver detalle">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                  <path d="M2 10s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6z" />
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Pagination ── -->
+  <div *ngIf="!loading && totalPages > 1" class="pagination-bar">
+    <button class="btn btn-outline" (click)="prevPage()" [disabled]="page === 0">← Anterior</button>
+    <span class="page-info">Página {{ page + 1 }} de {{ totalPages }}</span>
+    <button class="btn btn-outline" (click)="nextPage()" [disabled]="page >= totalPages - 1">
+      Siguiente →
+    </button>
+  </div>
+</div>

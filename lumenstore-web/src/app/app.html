@@ -1,133 +1,242 @@
-<!-- ─── ADMIN NAVBAR ─────────────────────────────── -->
-<header class="app-header" *ngIf="isAdminRoute(); else storeNav">
-  <div class="container header-inner admin-nav">
-    <div class="brand-wrap">
-      <a class="brand" routerLink="/admin/dashboard">Lumenstore</a>
+<ng-container *ngIf="isAdminRoute(); else storeShell">
+  <router-outlet></router-outlet>
+</ng-container>
+
+<ng-template #storeShell>
+  <header [class.scrolled]="isScrolled" [class.promo-hidden]="promoHidden">
+    <!-- Promo bar -->
+    <div class="promo-bar" *ngIf="topBanner">
+      {{ topBanner.title }}<span *ngIf="topBanner.subtitle"> · {{ topBanner.subtitle }}</span>
     </div>
 
-    <div class="header-actions">
-      <a routerLink="/store" class="back-to-store">
-        Volver a la tienda
-        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-      </a>
-      <ng-container *ngIf="auth.currentUser$ | async as user; else guestActions">
-        <div class="profile-dropdown" tabindex="0">
-          <button class="profile-btn btn-ghost" aria-haspopup="true" aria-expanded="false">
-            <i class="fa-regular fa-user"></i>
-            <span class="profile-name">{{ user.firstName }}</span>
-            <i class="fa-solid fa-caret-down caret"></i>
-          </button>
-          <ul class="dropdown-menu" role="menu">
-            <li role="none"><a role="menuitem" routerLink="/profile">Mi perfil</a></li>
-            <li role="none"><a role="menuitem" routerLink="/orders">Pedidos</a></li>
-            <li class="divider" role="separator"></li>
-            <li role="none">
-              <button role="menuitem" class="btn-ghost" (click)="onLogout()">Cerrar sesión</button>
-            </li>
-          </ul>
-        </div>
-      </ng-container>
-      <ng-template #guestActions>
-        <a routerLink="/profile" class="btn btn-ghost"><i class="fa-regular fa-user"></i></a>
-        <a routerLink="/login" class="btn btn-primary">Ingresar</a>
-      </ng-template>
-    </div>
-  </div>
-</header>
+    <div class="navbar">
+      <div class="nav-left">
+        <button class="burger" (click)="setMobileMenu(true)" aria-label="Abrir menú">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
 
-<!-- ─── STORE NAVBAR ─────────────────────────────── -->
-<ng-template #storeNav>
-  <header class="app-header">
-    <div class="container header-inner">
-      <div class="brand-wrap">
-        <a class="brand" routerLink="/store">Lumenstore</a>
+        <ul class="menu">
+          <li
+            class="menu-item"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            <a routerLink="/home">Inicio</a>
+          </li>
+          <li class="menu-item" routerLinkActive="active"><a routerLink="/store">Catálogo</a></li>
+          <li class="menu-item">
+            <a routerLink="/store" [queryParams]="{ promo: true }">Ofertas</a>
+          </li>
+        </ul>
       </div>
 
-      <nav class="nav" aria-label="Main navigation">
-        <ul>
-          <li><a routerLink="/home" routerLinkActive="active">Inicio</a></li>
-          <li><a routerLink="/store" routerLinkActive="active">Tienda</a></li>
-          <li><a routerLink="/orders" routerLinkActive="active">Pedidos</a></li>
-        </ul>
-      </nav>
+      <div class="logo" routerLink="/store">LUMENSTORE</div>
 
-      <div class="header-actions">
-        <button
-          class="icon-link cart-link"
-          (click)="cartService.toggleDrawer()"
-          aria-label="Carrito"
-        >
-          <i class="fa-solid fa-cart-arrow-down"></i>
-          <span class="cart-badge" *ngIf="cartCount > 0">{{ cartCount }}</span>
-        </button>
-        <a routerLink="/wishlists" class="icon-link heart-link" aria-label="Favoritos">
-          <i class="fa-regular fa-heart"></i>
-        </a>
-        <ng-container *ngIf="auth.currentUser$ | async as user; else guestActions2">
-          <div class="profile-dropdown" tabindex="0">
-            <button class="profile-btn btn-ghost" aria-haspopup="true" aria-expanded="false">
-              <i class="fa-regular fa-user"></i>
-              <span class="profile-name">{{ user.firstName }}</span>
-              <i class="fa-solid fa-caret-down caret"></i>
+      <div class="nav-right">
+        <div class="search-wrap" [class.open]="searchExpanded" #searchWrap>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Buscar productos, marcas..."
+            #searchInput
+            [(ngModel)]="searchQuery"
+            (keydown.enter)="executeSearch()"
+            (keydown.escape)="searchExpanded = false"
+          />
+          <button
+            class="icon-btn"
+            (click)="toggleSearch()"
+            [attr.aria-label]="searchExpanded ? 'Cerrar búsqueda' : 'Buscar'"
+          >
+            <svg
+              *ngIf="!searchExpanded"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <svg
+              *ngIf="searchExpanded"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <ng-container *ngIf="auth.currentUser$ | async as user; else guestIcons">
+          <div
+            class="account-trigger"
+            (mouseenter)="userDropdownOpen = true"
+            (mouseleave)="closeDropdownTimer()"
+            #accountTrigger
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+            >
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+            </svg>
+          </div>
+          <div
+            class="user-dd"
+            *ngIf="userDropdownOpen"
+            (mouseenter)="cancelDropdownTimer()"
+            (mouseleave)="closeDropdownTimer()"
+            #userDropdown
+          >
+            <div class="user-dd-head">
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+              >
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+              </svg>
+              <div>
+                <div class="user-dd-name">{{ user.firstName }} {{ user.lastName }}</div>
+                <div class="user-dd-email">{{ user.email }}</div>
+              </div>
+            </div>
+            <div class="user-dd-sep"></div>
+            <a routerLink="/profile" (click)="userDropdownOpen = false">Mi perfil</a>
+            <a routerLink="/orders" (click)="userDropdownOpen = false">Mis pedidos</a>
+            <a routerLink="/wishlists" (click)="userDropdownOpen = false">Favoritos</a>
+            <a routerLink="/addresses" (click)="userDropdownOpen = false">Direcciones</a>
+            <div class="user-dd-sep" *ngIf="isCurrentUserAdmin()"></div>
+            <a
+              routerLink="/admin/dashboard"
+              (click)="userDropdownOpen = false"
+              *ngIf="isCurrentUserAdmin()"
+              >Administración</a
+            >
+            <div class="user-dd-sep"></div>
+            <button class="dd-logout" (click)="onLogout(); userDropdownOpen = false">
+              Cerrar sesión
             </button>
-            <ul class="dropdown-menu" role="menu">
-              <li role="none"><a role="menuitem" routerLink="/profile">Mi perfil</a></li>
-              <li role="none"><a role="menuitem" routerLink="/wishlists">Favoritos</a></li>
-              <li role="none"><a role="menuitem" routerLink="/orders">Pedidos</a></li>
-              <li role="none" *ngIf="isAdmin()">
-                <a role="menuitem" routerLink="/admin/dashboard">⚙️ Admin</a>
-              </li>
-              <li class="divider" role="separator"></li>
-              <li role="none">
-                <button role="menuitem" class="btn-ghost" (click)="onLogout()">
-                  Cerrar sesión
-                </button>
-              </li>
-            </ul>
           </div>
         </ng-container>
-        <ng-template #guestActions2>
-          <a routerLink="/profile" class="btn btn-ghost"><i class="fa-regular fa-user"></i></a>
-          <a routerLink="/login" class="btn btn-primary">Ingresar</a>
+        <ng-template #guestIcons>
+          <a class="icon-btn" routerLink="/login" aria-label="Iniciar sesión">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+            </svg>
+          </a>
         </ng-template>
+
+        <a class="icon-btn" routerLink="/wishlists" aria-label="Lista de deseos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path
+              d="M12 21s-7.5-4.7-10-9.3C.4 8 2 4 6 4c2.2 0 3.8 1.3 6 4 2.2-2.7 3.8-4 6-4 4 0 5.6 4 4 7.7C19.5 16.3 12 21 12 21z"
+            />
+          </svg>
+          <span class="badge-count" *ngIf="wishlistCount > 0">{{ wishlistCount }}</span>
+        </a>
+
+        <button class="icon-btn" (click)="cartService.toggleDrawer()" aria-label="Carrito">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M6 6h15l-1.5 9h-12z" />
+            <path d="M6 6L4 3H2" />
+            <circle cx="9" cy="20" r="1" />
+            <circle cx="18" cy="20" r="1" />
+          </svg>
+          <span class="badge-count" *ngIf="cartCount > 0">{{ cartCount }}</span>
+        </button>
       </div>
     </div>
   </header>
-</ng-template>
 
-<main class="app-main">
-  <div class="container">
+  <!-- Mobile drawer -->
+  <div class="m-overlay" *ngIf="mobileMenuOpen" (click)="setMobileMenu(false)"></div>
+  <div class="m-drawer" [class.open]="mobileMenuOpen">
+    <div class="m-drawer-head">
+      <span>MENÚ</span>
+      <button (click)="setMobileMenu(false)">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+        >
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+    <div class="m-nav">
+      <a routerLink="/home" (click)="setMobileMenu(false)" routerLinkActive="m-active">Inicio</a>
+      <a routerLink="/store" (click)="setMobileMenu(false)" routerLinkActive="m-active">Catálogo</a>
+      <a routerLink="/store" [queryParams]="{ promo: true }" (click)="setMobileMenu(false)"
+        >Ofertas</a
+      >
+      <div class="m-sep"></div>
+      <a routerLink="/orders" (click)="setMobileMenu(false)" routerLinkActive="m-active"
+        >Mis pedidos</a
+      >
+    </div>
+  </div>
+
+  <main class="main-content">
     <router-outlet></router-outlet>
-  </div>
-</main>
+  </main>
 
-<app-cart-drawer></app-cart-drawer>
+  <app-cart-drawer></app-cart-drawer>
 
-<footer class="app-footer">
-  <div class="container footer-inner">
-    <div class="footer-col footer-brand">
-      <a class="brand" routerLink="/">Lumenstore</a>
-      <p class="muted">© 2026 Lumenstore · All rights reserved</p>
+  <footer class="app-footer">
+    <div class="footer-inner">
+      <div class="footer-col">
+        <h4>Lumenstore</h4>
+        <p class="footer-muted">
+          © {{ currentYear }} Lumenstore.<br />Todos los derechos reservados.
+        </p>
+      </div>
+      <div class="footer-col">
+        <h4>Shop</h4>
+        <a routerLink="/store">Tienda</a>
+        <a routerLink="/orders">Pedidos</a>
+      </div>
+      <div class="footer-col">
+        <h4>Ayuda</h4>
+        <a routerLink="/contact">Contacto</a>
+        <a routerLink="/pages/guia-de-tallas">Guía de tallas</a>
+        <a routerLink="/pages/envios-y-devoluciones">Envíos y devoluciones</a>
+      </div>
+      <div class="footer-col">
+        <h4>Suscríbete</h4>
+        <form class="nl-form" (submit)="onNewsletterSubmit($event)">
+          <input
+            type="email"
+            placeholder="Tu correo"
+            [(ngModel)]="newsletterEmail"
+            name="email"
+            [disabled]="newsletterSuccess"
+          />
+          <button type="submit" [disabled]="newsletterSuccess || newsletterLoading">Enviar</button>
+        </form>
+      </div>
     </div>
-
-    <div class="footer-col footer-links">
-      <h4>Shop</h4>
-      <a routerLink="/store">Tienda</a>
-      <a routerLink="/orders">Pedidos</a>
-    </div>
-
-    <div class="footer-col footer-info">
-      <h4>Ayuda</h4>
-      <a routerLink="/contact">Contacto</a>
-      <a routerLink="/terms">Términos</a>
-    </div>
-
-    <div class="footer-col footer-newsletter">
-      <h4>Suscríbete</h4>
-      <form class="newsletter-form" (submit)="$event.preventDefault()">
-        <input type="email" placeholder="Tu correo" aria-label="Email" />
-        <button class="btn btn-sm btn-primary" type="submit">Enviar</button>
-      </form>
-    </div>
-  </div>
-</footer>
+  </footer>
+</ng-template>

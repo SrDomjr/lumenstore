@@ -2,6 +2,7 @@ package com.lumenstore.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -46,6 +47,48 @@ public class Producto {
     private Boolean isActive = true;
 
     private Boolean featured = false;
+
+    // ─── SEO ─────────────────────────────────────────────
+    @Column(name = "meta_title", length = 255)
+    private String metaTitle;
+
+    @Column(name = "meta_description", columnDefinition = "TEXT")
+    private String metaDescription;
+
+    @Column(name = "meta_keywords", length = 500)
+    private String metaKeywords;
+
+    // ─── Atributos adicionales ────────────────────────────
+    @Column(length = 255)
+    private String material;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal weight;
+
+    @Column(length = 100)
+    private String dimensions;
+
+    @Column(length = 50)
+    private String gender;
+
+    @Column(length = 255)
+    private String warranty;
+
+    @Column(length = 255)
+    private String manufacturer;
+
+    @Column(name = "country_of_origin", length = 100)
+    private String countryOfOrigin;
+
+    // ─── Configuraciones ─────────────────────────────────
+    @Column(name = "free_shipping")
+    private Boolean freeShipping = false;
+
+    @Column(name = "is_new")
+    private Boolean isNew = false;
+
+    @Column(length = 50)
+    private String visibility = "visible";
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProductVariant> variants;

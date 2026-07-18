@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { CloudinaryUrlPipe } from '../../pipes/cloudinary-url.pipe';
 import { of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ProductService } from '../../services/product.service';
@@ -9,7 +10,7 @@ import { Producto } from '../../models';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, CloudinaryUrlPipe],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
 })

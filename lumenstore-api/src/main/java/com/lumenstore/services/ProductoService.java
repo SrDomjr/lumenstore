@@ -11,7 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.lumenstore.dto.ProductoResponseDTO;
 import com.lumenstore.dto.ProductVariantResponseDTO;
 import com.lumenstore.dto.ProductoRequestDTO;
-import com.lumenstore.models.ProductImage;
+import com.lumenstore.dto.ProductImageResponseDTO;
 
 
 public interface ProductoService {
@@ -48,12 +48,19 @@ public interface ProductoService {
     // Variant CRUD
     ProductVariantResponseDTO createVariant(Long productId, Map<String, Object> body);
     ProductVariantResponseDTO updateVariant(Long variantId, Map<String, Object> body);
+    void deleteVariant(Long variantId);
 
     // Images
-    List<ProductImage> uploadImages(Long productId, List<MultipartFile> files);
+    List<ProductImageResponseDTO> uploadImages(Long productId, List<MultipartFile> files, Long variantId);
     void setMainImage(Long productId, Long imageId);
 
     // Tags
     List<String> getProductTags(Long productId);
     void updateProductTags(Long productId, List<String> tags);
+
+    // Uniqueness checks
+    boolean slugExists(String slug);
+    boolean slugExistsForOther(String slug, Long excludeId);
+    boolean skuExists(String sku);
+    boolean skuExistsForOther(String sku, Long excludeId);
 }

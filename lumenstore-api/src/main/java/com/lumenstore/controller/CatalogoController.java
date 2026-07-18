@@ -30,6 +30,11 @@ public class CatalogoController {
         return ResponseEntity.ok(catalogoService.getActiveCategories());
     }
 
+    @GetMapping("/categories/tree")
+    public ResponseEntity<List<CategoriaResponseDTO>> getCategoryTree() {
+        return ResponseEntity.ok(catalogoService.getCategoryTree());
+    }
+
     @GetMapping("/brands")
     public ResponseEntity<List<MarcaResponseDTO>> getBrands() {
         return ResponseEntity.ok(catalogoService.getActiveBrands());

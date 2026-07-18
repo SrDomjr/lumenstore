@@ -6,6 +6,9 @@ import com.lumenstore.models.Color;
 import com.lumenstore.models.Talla;
 import com.lumenstore.repository.*;
 import com.lumenstore.services.CatalogoService;
+import com.lumenstore.exception.ResourceNotFoundException;
+import com.lumenstore.exception.DuplicateResourceException;
+import com.lumenstore.exception.BusinessRuleException;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -27,6 +30,7 @@ public class CatalogAdminController {
     private final IMarcaRepository marcaRepository;
     private final IColorRepository colorRepository;
     private final ITallaRepository tallaRepository;
+    private final IProductoRepository productoRepository;
 
     // ─── Categories CRUD ───────────────────────────────────────
 
@@ -43,6 +47,9 @@ public class CatalogAdminController {
     @PostMapping("/categories")
     @Transactional
     public ResponseEntity<CategoriaResponseDTO> createCategory(@Valid @RequestBody CategoryRequest request) {
+        if (categoriaRepository.existsByNameIgnoreCase(request.getName())) {
+            throw new DuplicateResourceException("Ya existe una categoría con el nombre: " + request.getName());
+        }
         var category = com.lumenstore.models.Categoria.builder()
                 .name(request.getName())
                 .slug(request.getName().toLowerCase()
@@ -68,8 +75,13 @@ public class CatalogAdminController {
             @PathVariable Long id,
             @Valid @RequestBody CategoryRequest request) {
         var category = categoriaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada con id: " + id));
-        if (request.getName() != null) category.setName(request.getName());
+                .orElseThrow(() -> ResourceNotFoundException.of("Categoría", id));
+        if (request.getName() != null && !request.getName().isBlank()) {
+            if (categoriaRepository.existsByNameIgnoreCaseAndIdNot(request.getName(), id)) {
+                throw new DuplicateResourceException("Ya existe una categoría con el nombre: " + request.getName());
+            }
+            category.setName(request.getName());
+        }
         if (request.getDescription() != null) category.setDescription(request.getDescription());
         if (request.getImageUrl() != null) category.setImageUrl(request.getImageUrl());
         categoriaRepository.save(category);
@@ -80,7 +92,13 @@ public class CatalogAdminController {
     @Transactional
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         var category = categoriaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada con id: " + id));
+                .orElseThrow(() -> ResourceNotFoundException.of("Categoría", id));
+        long activeProducts = productoRepository.countByCategoryIdAndIsActiveTrue(id);
+        if (activeProducts > 0) {
+            throw new BusinessRuleException(
+                    "No se puede eliminar la categoría porque tiene " + activeProducts +
+                            " producto(s) activo(s). Reasigne o desactive esos productos primero.");
+        }
         category.setIsActive(false);
         categoriaRepository.save(category);
         return ResponseEntity.noContent().build();
@@ -101,6 +119,9 @@ public class CatalogAdminController {
     @PostMapping("/brands")
     @Transactional
     public ResponseEntity<MarcaResponseDTO> createBrand(@Valid @RequestBody BrandRequest request) {
+        if (marcaRepository.existsByNameIgnoreCase(request.getName())) {
+            throw new DuplicateResourceException("Ya existe una marca con el nombre: " + request.getName());
+        }
         var brand = com.lumenstore.models.Marca.builder()
                 .name(request.getName())
                 .slug(request.getName().toLowerCase()
@@ -125,8 +146,13 @@ public class CatalogAdminController {
             @PathVariable Long id,
             @Valid @RequestBody BrandRequest request) {
         var brand = marcaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Marca no encontrada con id: " + id));
-        if (request.getName() != null) brand.setName(request.getName());
+                .orElseThrow(() -> ResourceNotFoundException.of("Marca", id));
+        if (request.getName() != null && !request.getName().isBlank()) {
+            if (marcaRepository.existsByNameIgnoreCaseAndIdNot(request.getName(), id)) {
+                throw new DuplicateResourceException("Ya existe una marca con el nombre: " + request.getName());
+            }
+            brand.setName(request.getName());
+        }
         if (request.getDescription() != null) brand.setDescription(request.getDescription());
         if (request.getLogoUrl() != null) brand.setLogoUrl(request.getLogoUrl());
         marcaRepository.save(brand);
@@ -137,7 +163,13 @@ public class CatalogAdminController {
     @Transactional
     public ResponseEntity<Void> deleteBrand(@PathVariable Long id) {
         var brand = marcaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Marca no encontrada con id: " + id));
+                .orElseThrow(() -> ResourceNotFoundException.of("Marca", id));
+        long activeProducts = productoRepository.countByBrandIdAndIsActiveTrue(id);
+        if (activeProducts > 0) {
+            throw new BusinessRuleException(
+                    "No se puede eliminar la marca porque tiene " + activeProducts +
+                            " producto(s) activo(s). Reasigne o desactive esos productos primero.");
+        }
         brand.setIsActive(false);
         marcaRepository.save(brand);
         return ResponseEntity.noContent().build();
@@ -154,7 +186,7 @@ public class CatalogAdminController {
     @Transactional
     public ResponseEntity<Color> createColor(@Valid @RequestBody ColorRequest request) {
         if (colorRepository.existsByNameIgnoreCase(request.getName())) {
-            throw new RuntimeException("Ya existe un color con el nombre: " + request.getName());
+            throw new DuplicateResourceException("Ya existe un color con el nombre: " + request.getName());
         }
         Color color = Color.builder()
                 .name(request.getName())
@@ -170,7 +202,7 @@ public class CatalogAdminController {
             @PathVariable Long id,
             @Valid @RequestBody ColorRequest request) {
         Color color = colorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Color no encontrado con id: " + id));
+                .orElseThrow(() -> ResourceNotFoundException.of("Color", id));
         if (request.getName() != null) color.setName(request.getName());
         if (request.getHexCode() != null) color.setHexCode(request.getHexCode());
         color = colorRepository.save(color);
@@ -208,7 +240,7 @@ public class CatalogAdminController {
             @PathVariable Long id,
             @Valid @RequestBody SizeRequest request) {
         Talla size = tallaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Talla no encontrada con id: " + id));
+                .orElseThrow(() -> ResourceNotFoundException.of("Talla", id));
         if (request.getName() != null) size.setName(request.getName());
         size = tallaRepository.save(size);
         return ResponseEntity.ok(size);

@@ -1,398 +1,1193 @@
-<div class="product-edit container">
-  <div class="header-panel">
-    <div>
-      <span class="eyebrow">Catálogo</span>
-      <h1 *ngIf="isNew">Crear producto</h1>
-      <h1 *ngIf="!isNew && productId">
-        Editar producto #{{ productId }}<span *ngIf="productName">: {{ productName }}</span>
-      </h1>
+<div class="pe-container">
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- STICKY ACTION BAR                                        -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div class="pe-action-bar">
+    <div class="pe-action-bar__left">
+      <a routerLink="/admin/catalog/products" class="pe-back-link" aria-label="Volver al listado">
+        <span class="pe-back-arrow"><i class="fa-solid fa-arrow-left"></i></span>
+        <span class="pe-back-text">Productos</span>
+      </a>
+      <div class="pe-action-bar__divider"></div>
+      <h2 class="pe-action-bar__title">
+        <ng-container *ngIf="isNew">Crear producto</ng-container>
+        <ng-container *ngIf="!isNew && productName">Editar: {{ productName }}</ng-container>
+        <ng-container *ngIf="!isNew && !productName">Cargando...</ng-container>
+      </h2>
+    </div>
+    <div class="pe-action-bar__right">
+      <span class="pe-last-saved" *ngIf="lastSavedAt">
+        Guardado {{ lastSavedAt | date: 'HH:mm' }}
+      </span>
+      <button class="pe-btn pe-btn--ghost" (click)="saveAsDraft()" [disabled]="saving">
+        Guardar borrador
+      </button>
+      <button class="pe-btn pe-btn--primary" (click)="save()" [disabled]="saving || form.invalid">
+        <span class="pe-btn-spinner" *ngIf="saving"></span>
+        <span *ngIf="!saving">{{ isNew ? 'Crear producto' : 'Guardar cambios' }}</span>
+        <span *ngIf="saving">Guardando...</span>
+      </button>
     </div>
   </div>
 
-  <div *ngIf="loading" class="loading-panel">Cargando...</div>
+  <div class="pe-layout">
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- STICKY SIDEBAR NAVIGATION                                -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <nav class="pe-sidebar" aria-label="Navegación del formulario">
+      <ul class="pe-sidebar__list">
+        <li *ngFor="let section of sections" class="pe-sidebar__item">
+          <button
+            class="pe-sidebar__link"
+            [class.pe-sidebar__link--active]="activeSection === section.id"
+            (click)="scrollToSection(section.id)"
+            [attr.aria-current]="activeSection === section.id ? 'true' : null"
+          >
+            <span class="pe-sidebar__icon">{{ section.icon }}</span>
+            <span class="pe-sidebar__label">{{ section.label }}</span>
+          </button>
+        </li>
+      </ul>
+      <div class="pe-sidebar__divider"></div>
+      <ul class="pe-sidebar__list">
+        <li *ngFor="let section of secondarySections" class="pe-sidebar__item">
+          <button
+            class="pe-sidebar__link pe-sidebar__link--secondary"
+            [class.pe-sidebar__link--active]="activeSection === section.id"
+            (click)="scrollToSection(section.id)"
+            [attr.aria-current]="activeSection === section.id ? 'true' : null"
+          >
+            <span class="pe-sidebar__icon">{{ section.icon }}</span>
+            <span class="pe-sidebar__label">{{ section.label }}</span>
+          </button>
+        </li>
+      </ul>
+    </nav>
 
-  <form [formGroup]="form" (ngSubmit)="save()" *ngIf="!loading" class="edit-form">
-    <!-- ─── Basic Info ─────────────────────────────────────── -->
-    <div class="section-title">Información básica</div>
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- MAIN CONTENT                                             -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <main class="pe-content" #contentContainer>
+      <!-- ─── Loading State ────────────────────────────────── -->
+      <div class="pe-loading" *ngIf="loading">
+        <div class="pe-skeleton pe-skeleton--title"></div>
+        <div class="pe-skeleton pe-skeleton--text"></div>
+        <div class="pe-skeleton pe-skeleton--text"></div>
+        <div class="pe-skeleton pe-skeleton--block"></div>
+      </div>
 
-    <div class="form-row">
-      <div class="form-group flex-2">
-        <label>Nombre del producto *</label>
-        <input
-          formControlName="name"
-          class="form-control"
-          placeholder="Ej: Zapatillas Running Pro"
-        />
-        <small class="field-error" *ngIf="form.get('name')?.invalid && form.get('name')?.touched"
-          >El nombre es obligatorio</small
+      <form [formGroup]="form" (ngSubmit)="save()" *ngIf="!loading" class="pe-form">
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- SECTION: GENERAL                                    -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <section id="section-general" class="pe-section">
+          <div class="pe-section__header">
+            <span class="pe-section__icon">📋</span>
+            <div>
+              <h3 class="pe-section__title">Información general</h3>
+              <p class="pe-section__desc">Nombre, slug y descripción del producto</p>
+            </div>
+          </div>
+          <div class="pe-section__body">
+            <div class="pe-field">
+              <label class="pe-label" for="name"
+                >Nombre del producto <span class="pe-required">*</span></label
+              >
+              <div class="pe-input-wrap">
+                <input
+                  id="name"
+                  formControlName="name"
+                  class="pe-input"
+                  placeholder="Ej: Zapatillas Running Pro"
+                  maxlength="255"
+                  aria-describedby="name-counter"
+                />
+                <span
+                  id="name-counter"
+                  class="pe-counter"
+                  [class.pe-counter--warn]="nameLength > 200"
+                >
+                  {{ nameLength }} / 255
+                </span>
+              </div>
+              <small
+                class="pe-error"
+                *ngIf="form.get('name')?.invalid && form.get('name')?.touched"
+              >
+                El nombre es obligatorio
+              </small>
+            </div>
+
+            <div class="pe-field">
+              <label class="pe-label" for="slug">
+                Slug (URL)
+                <button
+                  type="button"
+                  class="pe-slug-lock"
+                  (click)="toggleSlugLock()"
+                  [title]="slugLocked ? 'Desbloquear' : 'Bloquear'"
+                >
+                  <span *ngIf="slugLocked"><i class="fa-solid fa-lock"></i></span>
+                  <span *ngIf="!slugLocked"><i class="fa-solid fa-lock-open"></i></span>
+                </button>
+              </label>
+              <div class="pe-input-wrap">
+                <input
+                  id="slug"
+                  formControlName="slug"
+                  class="pe-input"
+                  placeholder="zapatillas-running-pro"
+                  (input)="onSlugInput()"
+                  aria-describedby="slug-status"
+                />
+                <span id="slug-status" class="pe-field-status">
+                  <span class="pe-spinner-sm" *ngIf="slugChecking"></span>
+                  <span
+                    class="pe-check-icon"
+                    *ngIf="!slugChecking && form.get('slug')?.valid && form.get('slug')?.value"
+                    ><i class="fa-solid fa-check"></i></span
+                  >
+                </span>
+              </div>
+              <small class="pe-error" *ngIf="form.get('slug')?.errors?.['slugTaken']">
+                Este slug ya está en uso
+              </small>
+            </div>
+
+            <div class="pe-field">
+              <label class="pe-label" for="shortDescription">Descripción corta</label>
+              <input
+                id="shortDescription"
+                formControlName="shortDescription"
+                class="pe-input"
+                placeholder="Breve descripción para tarjetas y listados"
+                maxlength="500"
+              />
+            </div>
+
+            <div class="pe-field">
+              <label class="pe-label" for="description">Descripción completa</label>
+              <textarea
+                id="description"
+                formControlName="description"
+                class="pe-textarea"
+                rows="4"
+                placeholder="Descripción detallada del producto"
+                maxlength="5000"
+              ></textarea>
+              <span class="pe-counter">{{ descriptionLength }} / 5000</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- SECTION: ORGANIZATION                               -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <section id="section-organization" class="pe-section">
+          <div class="pe-section__header">
+            <span class="pe-section__icon">🏷️</span>
+            <div>
+              <h3 class="pe-section__title">Organización</h3>
+              <p class="pe-section__desc">Marca, categoría, subcategoría y etiquetas</p>
+            </div>
+          </div>
+          <div class="pe-section__body">
+            <div class="pe-row">
+              <div class="pe-field pe-field--half">
+                <label class="pe-label">
+                  Marca <span class="pe-required">*</span>
+                  <button
+                    type="button"
+                    class="pe-quick-add"
+                    (click)="openQuickCreate('brand')"
+                    title="Crear nueva marca"
+                  >
+                    +
+                  </button>
+                </label>
+                <div class="pe-combo">
+                  <input
+                    class="pe-input pe-combo__input"
+                    placeholder="Buscar marca..."
+                    [(ngModel)]="brandSearch"
+                    [ngModelOptions]="{ standalone: true }"
+                    (focus)="showBrandDropdown = true"
+                    (blur)="delayedClose('brand')"
+                  />
+                  <button
+                    *ngIf="brandSearch"
+                    type="button"
+                    class="pe-combo__clear"
+                    (click)="clearBrand()"
+                  >
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                  <div
+                    class="pe-combo__dropdown"
+                    *ngIf="showBrandDropdown && filteredBrands.length > 0"
+                  >
+                    <button
+                      type="button"
+                      class="pe-combo__option"
+                      *ngFor="let b of filteredBrands"
+                      [class.pe-combo__option--selected]="form.value.brandId === b.id"
+                      (mousedown)="selectBrand(b)"
+                    >
+                      {{ b.name }}
+                    </button>
+                  </div>
+                </div>
+                <small
+                  class="pe-error"
+                  *ngIf="form.get('brandId')?.invalid && form.get('brandId')?.touched"
+                >
+                  Selecciona una marca
+                </small>
+              </div>
+              <div class="pe-field pe-field--half">
+                <label class="pe-label">
+                  Categoría <span class="pe-required">*</span>
+                  <button
+                    type="button"
+                    class="pe-quick-add"
+                    (click)="openQuickCreate('category')"
+                    title="Crear nueva categoría"
+                  >
+                    +
+                  </button>
+                </label>
+                <div class="pe-combo">
+                  <input
+                    class="pe-input pe-combo__input"
+                    placeholder="Buscar categoría..."
+                    [(ngModel)]="categorySearch"
+                    [ngModelOptions]="{ standalone: true }"
+                    (focus)="showCategoryDropdown = true"
+                    (blur)="delayedClose('category')"
+                  />
+                  <button
+                    *ngIf="categorySearch"
+                    type="button"
+                    class="pe-combo__clear"
+                    (click)="clearCategory()"
+                  >
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                  <div
+                    class="pe-combo__dropdown"
+                    *ngIf="showCategoryDropdown && filteredCategories.length > 0"
+                  >
+                    <button
+                      type="button"
+                      class="pe-combo__option"
+                      *ngFor="let c of filteredCategories"
+                      [class.pe-combo__option--selected]="form.value.categoryId === c.id"
+                      (mousedown)="selectCategory(c)"
+                    >
+                      {{ c.name }}
+                    </button>
+                  </div>
+                </div>
+                <small
+                  class="pe-error"
+                  *ngIf="form.get('categoryId')?.invalid && form.get('categoryId')?.touched"
+                >
+                  Selecciona una categoría
+                </small>
+              </div>
+            </div>
+
+            <div class="pe-row">
+              <div class="pe-field pe-field--half">
+                <label class="pe-label">Etiquetas</label>
+                <div class="pe-tag-input">
+                  <input
+                    #tagInput
+                    id="tagInput"
+                    class="pe-input"
+                    [(ngModel)]="tagInputValue"
+                    [ngModelOptions]="{ standalone: true }"
+                    placeholder="Escribe y presiona Enter"
+                    (keydown)="onTagKeydown($event)"
+                    (blur)="onTagBlur($event)"
+                    aria-label="Agregar etiqueta"
+                  />
+                </div>
+                <div class="pe-tags" *ngIf="tags.length > 0">
+                  <span class="pe-tag" *ngFor="let tag of tags; let i = index">
+                    {{ tag }}
+                    <button
+                      type="button"
+                      class="pe-tag__remove"
+                      (click)="removeTag(i)"
+                      aria-label="Eliminar etiqueta {{ tag }}"
+                    >
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </span>
+                </div>
+              </div>
+              <div class="pe-field pe-field--half">
+                <label class="pe-label" for="sku">SKU</label>
+                <input
+                  id="sku"
+                  class="pe-input"
+                  formControlName="sku"
+                  placeholder="Código SKU único"
+                  maxlength="50"
+                />
+                <small class="pe-hint" *ngIf="!form.get('sku')?.value">
+                  Opcional. Identificador único del producto.
+                </small>
+                <small
+                  class="pe-error"
+                  *ngIf="form.get('sku')?.errors?.['skuTaken']"
+                >
+                  Este SKU ya está en uso
+                </small>
+                <small class="pe-checking" *ngIf="skuChecking">Verificando...</small>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- SECTION: VARIANTS                                   -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <section id="section-variants" class="pe-section">
+          <div class="pe-section__header">
+            <span class="pe-section__icon">🧩</span>
+            <div>
+              <h3 class="pe-section__title">Variantes</h3>
+              <p class="pe-section__desc">
+                {{ totalVariants }} variante(s) · {{ activeVariants }} activa(s) · Stock total:
+                {{ totalStock }}
+              </p>
+            </div>
+          </div>
+          <div class="pe-section__body">
+            <!-- Color selector -->
+            <div class="pe-variant-selector">
+              <label class="pe-label">
+                Colores
+                <button
+                  type="button"
+                  class="pe-quick-add"
+                  (click)="openQuickCreate('color')"
+                  title="Crear nuevo color"
+                >
+                  +
+                </button>
+              </label>
+              <div class="pe-color-grid">
+                <button
+                  *ngFor="let c of colors"
+                  type="button"
+                  class="pe-color-chip"
+                  [class.pe-color-chip--active]="selectedColorIds.has(c.id)"
+                  (click)="toggleColor(c.id)"
+                  [style.--color]="c.hexCode || '#000'"
+                  [attr.aria-label]="'Seleccionar color ' + c.name"
+                  [attr.aria-pressed]="selectedColorIds.has(c.id)"
+                >
+                  <span class="pe-color-chip__swatch">
+                    <span class="pe-color-chip__check" *ngIf="selectedColorIds.has(c.id)"><i class="fa-solid fa-check"></i></span>
+                  </span>
+                  <span class="pe-color-chip__name">{{ c.name }}</span>
+                </button>
+                <div *ngIf="colors.length === 0" class="pe-empty-hint">
+                  No hay colores registrados
+                </div>
+              </div>
+            </div>
+
+            <!-- Size selector -->
+            <div class="pe-variant-selector">
+              <label class="pe-label">
+                Tallas
+                <button
+                  type="button"
+                  class="pe-quick-add"
+                  (click)="openQuickCreate('size')"
+                  title="Crear nueva talla"
+                >
+                  +
+                </button>
+              </label>
+              <div class="pe-size-grid">
+                <button
+                  *ngFor="let s of sizes"
+                  type="button"
+                  class="pe-size-chip"
+                  [class.pe-size-chip--active]="selectedSizeIds.has(s.id)"
+                  (click)="toggleSize(s.id)"
+                  [attr.aria-label]="'Seleccionar talla ' + s.name"
+                  [attr.aria-pressed]="selectedSizeIds.has(s.id)"
+                >
+                  {{ s.name }}
+                </button>
+                <div *ngIf="sizes.length === 0" class="pe-empty-hint">
+                  No hay tallas registradas
+                </div>
+              </div>
+            </div>
+
+            <!-- Variant Matrix -->
+            <div class="pe-matrix" *ngIf="variantMatrix.length > 0">
+              <div class="pe-matrix__toolbar">
+                <span class="pe-matrix__count">{{ variantMatrix.length }} variante(s)</span>
+                <button
+                  type="button"
+                  class="pe-btn pe-btn--small pe-btn--ghost"
+                  (click)="toggleBulkEdit()"
+                >
+                  {{ showBulkEdit ? 'Cancelar' : 'Edición masiva' }}
+                </button>
+              </div>
+
+              <!-- Bulk Edit Panel -->
+              <div class="pe-bulk-edit" *ngIf="showBulkEdit">
+                <div class="pe-bulk-edit__fields">
+                  <div class="pe-bulk-field">
+                    <label>Precio</label>
+                    <input
+                      class="pe-input pe-input--sm"
+                      type="number"
+                      [(ngModel)]="bulkEditValues.price"
+                      [ngModelOptions]="{ standalone: true }"
+                      placeholder="—"
+                    />
+                  </div>
+                  <div class="pe-bulk-field">
+                    <label>Costo</label>
+                    <input
+                      class="pe-input pe-input--sm"
+                      type="number"
+                      [(ngModel)]="bulkEditValues.cost"
+                      [ngModelOptions]="{ standalone: true }"
+                      placeholder="—"
+                    />
+                  </div>
+                  <div class="pe-bulk-field">
+                    <label>Precio comp.</label>
+                    <input
+                      class="pe-input pe-input--sm"
+                      type="number"
+                      [(ngModel)]="bulkEditValues.compareAtPrice"
+                      [ngModelOptions]="{ standalone: true }"
+                      placeholder="—"
+                    />
+                  </div>
+                  <div class="pe-bulk-field">
+                    <label>Stock</label>
+                    <input
+                      class="pe-input pe-input--sm"
+                      type="number"
+                      [(ngModel)]="bulkEditValues.stock"
+                      [ngModelOptions]="{ standalone: true }"
+                      placeholder="—"
+                    />
+                  </div>
+                  <div class="pe-bulk-field">
+                    <label>Peso (kg)</label>
+                    <input
+                      class="pe-input pe-input--sm"
+                      type="number"
+                      [(ngModel)]="bulkEditValues.weight"
+                      [ngModelOptions]="{ standalone: true }"
+                      placeholder="—"
+                    />
+                  </div>
+                  <div class="pe-bulk-field">
+                    <label>Activo</label>
+                    <select
+                      class="pe-select pe-select--sm"
+                      [(ngModel)]="bulkEditValues.isActive"
+                      [ngModelOptions]="{ standalone: true }"
+                    >
+                      <option [ngValue]="null">—</option>
+                      <option [ngValue]="true">Sí</option>
+                      <option [ngValue]="false">No</option>
+                    </select>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="pe-btn pe-btn--small pe-btn--primary"
+                  (click)="applyBulkEdit()"
+                >
+                  Aplicar a {{ variantMatrix.length }} variante(s)
+                </button>
+              </div>
+
+              <!-- Matrix Table -->
+              <div class="pe-matrix__table-wrap">
+                <table class="pe-matrix__table">
+                  <thead>
+                    <tr>
+                      <th>Variante</th>
+                      <th>SKU</th>
+                      <th>Precio</th>
+                      <th>Comp.</th>
+                      <th>Costo</th>
+                      <th>Margen</th>
+                      <th>Stock</th>
+                      <th>Stock mín.</th>
+                      <th>Peso</th>
+                      <th>Img</th>
+                      <th>Activo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let row of variantMatrix; let i = index">
+                      <td class="pe-matrix__label">
+                        <span
+                          class="pe-matrix__color-dot"
+                          *ngIf="row.colorHex"
+                          [style.background]="row.colorHex"
+                        ></span>
+                        <span>
+                          <ng-container *ngIf="row.colorName">{{ row.colorName }}</ng-container>
+                          <ng-container *ngIf="row.colorName && row.sizeName"> / </ng-container>
+                          <ng-container *ngIf="row.sizeName">{{ row.sizeName }}</ng-container>
+                          <ng-container *ngIf="!row.colorName && !row.sizeName">Única</ng-container>
+                        </span>
+                      </td>
+                      <td>
+                        <input
+                          class="pe-matrix__input"
+                          [(ngModel)]="row.sku"
+                          [ngModelOptions]="{ standalone: true }"
+                          placeholder="SKU"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          class="pe-matrix__input pe-matrix__input--price"
+                          type="number"
+                          step="0.01"
+                          [(ngModel)]="row.price"
+                          [ngModelOptions]="{ standalone: true }"
+                          placeholder="0.00"
+                          (input)="recalcRowMargin(row)"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          class="pe-matrix__input pe-matrix__input--price"
+                          type="number"
+                          step="0.01"
+                          [(ngModel)]="row.compareAtPrice"
+                          [ngModelOptions]="{ standalone: true }"
+                          placeholder="0.00"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          class="pe-matrix__input pe-matrix__input--price"
+                          type="number"
+                          step="0.01"
+                          [(ngModel)]="row.cost"
+                          [ngModelOptions]="{ standalone: true }"
+                          placeholder="0.00"
+                          (input)="recalcRowMargin(row)"
+                        />
+                      </td>
+                      <td
+                        class="pe-matrix__margin"
+                        [class.pe-margin--pos]="row.margin !== null && row.margin >= 0"
+                        [class.pe-margin--neg]="row.margin !== null && row.margin < 0"
+                      >
+                        {{ row.margin !== null ? (row.margin | number: '1.0-0') + '%' : '—' }}
+                      </td>
+                      <td>
+                        <input
+                          class="pe-matrix__input pe-matrix__input--stock"
+                          type="number"
+                          [(ngModel)]="row.stock"
+                          [ngModelOptions]="{ standalone: true }"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          class="pe-matrix__input pe-matrix__input--stock"
+                          type="number"
+                          [(ngModel)]="row.minStock"
+                          [ngModelOptions]="{ standalone: true }"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          class="pe-matrix__input pe-matrix__input--stock"
+                          type="number"
+                          step="0.1"
+                          [(ngModel)]="row.weight"
+                          [ngModelOptions]="{ standalone: true }"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          class="pe-matrix__img-btn"
+                          (click)="openImagePickerForVariant(i)"
+                          [title]="row.imageUrl ? 'Cambiar imagen' : 'Asignar imagen'"
+                        >
+                          {{ row.imageUrl ? '📷' : '➕' }}
+                        </button>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          class="pe-matrix__toggle"
+                          [class.pe-matrix__toggle--on]="row.isActive"
+                          (click)="toggleVariantActive(i)"
+                          [attr.aria-label]="
+                            row.isActive ? 'Desactivar variante' : 'Activar variante'
+                          "
+                        >
+                          <span class="pe-toggle-track">
+                            <span class="pe-toggle-thumb"></span>
+                          </span>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div *ngIf="variantMatrix.length === 0" class="pe-empty-state">
+              <p>Selecciona colores y/o tallas arriba para generar las variantes.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- SECTION: PRICING & INVENTORY                        -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <section id="section-pricing" class="pe-section">
+          <div class="pe-section__header">
+            <span class="pe-section__icon">💰</span>
+            <div>
+              <h3 class="pe-section__title">Precios e inventario</h3>
+              <p class="pe-section__desc">Resumen de precios, costos y stock</p>
+            </div>
+          </div>
+          <div class="pe-section__body">
+            <div class="pe-summary-cards">
+              <div class="pe-summary-card">
+                <span class="pe-summary-card__label">Precio más bajo</span>
+                <span class="pe-summary-card__value"> S/ {{ minPrice || '—' }} </span>
+              </div>
+              <div class="pe-summary-card">
+                <span class="pe-summary-card__label">Precio más alto</span>
+                <span class="pe-summary-card__value"> S/ {{ maxPrice || '—' }} </span>
+              </div>
+              <div class="pe-summary-card">
+                <span class="pe-summary-card__label">Stock total</span>
+                <span class="pe-summary-card__value">{{ totalStock }}</span>
+              </div>
+              <div class="pe-summary-card">
+                <span class="pe-summary-card__label">Variantes activas</span>
+                <span class="pe-summary-card__value"
+                  >{{ activeVariants }} / {{ totalVariants }}</span
+                >
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- SECTION: IMAGES                                     -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <section id="section-images" class="pe-section">
+          <div class="pe-section__header">
+            <span class="pe-section__icon">🖼️</span>
+            <div>
+              <h3 class="pe-section__title">Imágenes</h3>
+              <p class="pe-section__desc">
+                {{ images.length }} imagen(es) · Arrastra para reordenar
+              </p>
+            </div>
+          </div>
+          <div class="pe-section__body">
+            <!-- Dropzone -->
+            <div
+              class="pe-dropzone"
+              [class.pe-dropzone--active]="dragOver"
+              (dragover)="onDragOver($event)"
+              (dragleave)="onDragLeave($event)"
+              (drop)="onDrop($event)"
+              (click)="triggerFileInput()"
+              role="button"
+              tabindex="0"
+              aria-label="Subir imágenes"
+            >
+              <input
+                #fileInput
+                type="file"
+                accept="image/*"
+                multiple
+                style="display: none"
+                (change)="onFileSelected($event)"
+              />
+              <input
+                #variantFileInput
+                type="file"
+                accept="image/*"
+                style="display: none"
+                (change)="onFileSelectedForVariant($event)"
+              />
+              <div class="pe-dropzone__content">
+                <span class="pe-dropzone__icon">📷</span>
+                <p class="pe-dropzone__text">Arrastra imágenes aquí o haz clic para seleccionar</p>
+                <p class="pe-dropzone__hint">JPG, PNG, WEBP, GIF, AVIF · Máx. 10 MB cada una</p>
+              </div>
+            </div>
+
+            <!-- Upload progress -->
+            <div class="pe-upload-progress" *ngIf="isUploading">
+              <div class="pe-upload-progress__bar">
+                <div class="pe-upload-progress__fill" [style.width.%]="uploadProgress"></div>
+              </div>
+              <span class="pe-upload-progress__text">{{ uploadProgress }}%</span>
+            </div>
+
+            <!-- Pending previews -->
+            <div class="pe-pending-section" *ngIf="pendingPreviews.length > 0">
+              <div class="pe-pending-header">
+                <span class="pe-pending-count"
+                  >{{ pendingPreviews.length }} imagen(es) pendiente(s)</span
+                >
+                <button
+                  type="button"
+                  class="pe-btn pe-btn--small pe-btn--primary"
+                  (click)="uploadPendingImagesNow()"
+                  [disabled]="saving || isUploading"
+                >
+                  <span *ngIf="!saving && !isUploading">Subir ahora</span>
+                  <span *ngIf="saving || isUploading">Subiendo...</span>
+                </button>
+              </div>
+              <div class="pe-image-grid">
+                <div
+                  class="pe-image-card pe-image-card--pending"
+                  *ngFor="let preview of pendingPreviews; let i = index"
+                >
+                  <img [src]="preview.url" alt="Vista previa" />
+                  <div class="pe-image-card__overlay">
+                    <button
+                      type="button"
+                      class="pe-image-card__btn pe-image-card__btn--delete"
+                      (click)="removePendingImage(i)"
+                      title="Quitar"
+                    >
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                  <span class="pe-image-card__badge">Pendiente</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Image gallery with drag & drop reorder -->
+            <div class="pe-image-grid" *ngIf="images.length > 0">
+              <div
+                class="pe-image-card"
+                *ngFor="let img of images; let i = index"
+                [class.pe-image-card--drag-over]="dragOverImageIndex === i"
+                draggable="true"
+                (dragstart)="onImageDragStart(i)"
+                (dragover)="onImageDragOver($event, i)"
+                (drop)="onImageDrop($event)"
+                (dragend)="onImageDragEnd()"
+              >
+                <img
+                  [src]="img.imageUrl | cloudinaryUrl: 300 : 'thumb'"
+                  [alt]="img.altText || 'Imagen del producto'"
+                />
+                <div class="pe-image-card__overlay">
+                  <button
+                    type="button"
+                    class="pe-image-card__btn pe-image-card__btn--main"
+                    [class.pe-image-card__btn--is-main]="img.isMain"
+                    (click)="setMainImage(img.id)"
+                    [title]="img.isMain ? 'Imagen principal' : 'Marcar como principal'"
+                  >
+                    <i class="fa-solid fa-star"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="pe-image-card__btn pe-image-card__btn--delete"
+                    (click)="confirmDeleteImage(img.id)"
+                    title="Eliminar"
+                  >
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+                <span class="pe-image-card__badge" *ngIf="img.isMain">Principal</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- SECTION: DISCOUNTS                                  -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <section id="section-discounts" class="pe-section">
+          <div class="pe-section__header">
+            <span class="pe-section__icon">🏷️</span>
+            <div>
+              <h3 class="pe-section__title">Descuentos</h3>
+              <p class="pe-section__desc" *ngIf="totalSavings > 0">
+                Ahorro total: S/ {{ totalSavings | number: '1.2-2' }}
+              </p>
+              <p class="pe-section__desc" *ngIf="totalSavings === 0">
+                Selecciona descuentos para aplicar
+              </p>
+            </div>
+          </div>
+          <div class="pe-section__body">
+            <div class="pe-discount-grid" *ngIf="availableDiscounts.length > 0">
+              <label
+                class="pe-discount-card"
+                *ngFor="let d of availableDiscounts"
+                [class.pe-discount-card--selected]="selectedDiscountIds.has(d.id)"
+              >
+                <input
+                  type="checkbox"
+                  [checked]="selectedDiscountIds.has(d.id)"
+                  (change)="toggleDiscount(d.id)"
+                  class="pe-discount-card__checkbox"
+                />
+                <div class="pe-discount-card__body">
+                  <span class="pe-discount-card__name">{{ d.name }}</span>
+                  <span class="pe-discount-card__value" *ngIf="d.discountType === 'percentage'"
+                    >-{{ d.value }}%</span
+                  >
+                  <span class="pe-discount-card__value" *ngIf="d.discountType !== 'percentage'"
+                    >-S/ {{ d.value }}</span
+                  >
+                  <span
+                    class="pe-discount-card__preview"
+                    *ngIf="selectedDiscountIds.has(d.id) && getDiscountPreview(d) as preview"
+                  >
+                    S/ {{ preview.finalPrice | number: '1.2-2' }}
+                    <span class="pe-discount-card__savings"
+                      >(ahorro S/ {{ preview.savings | number: '1.2-2' }})</span
+                    >
+                  </span>
+                </div>
+              </label>
+            </div>
+            <div *ngIf="availableDiscounts.length === 0" class="pe-empty-state">
+              <p>No hay descuentos configurados. Créalos desde la sección de descuentos.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- COLLAPSIBLE: SEO                                    -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <section id="section-seo" class="pe-section pe-section--collapsible">
+          <button
+            type="button"
+            class="pe-section__header"
+            (click)="toggleCollapse(secondarySections[0])"
+            aria-expanded="!secondarySections[0].isCollapsed"
+          >
+            <span class="pe-section__icon">🔍</span>
+            <div>
+              <h3 class="pe-section__title">SEO</h3>
+              <p class="pe-section__desc">Optimización para buscadores</p>
+            </div>
+            <span class="pe-chevron" [class.pe-chevron--open]="!secondarySections[0].isCollapsed"
+              ><i class="fa-solid fa-chevron-down"></i></span
+            >
+          </button>
+          <div
+            class="pe-section__body"
+            [class.pe-section__body--hidden]="secondarySections[0].isCollapsed"
+          >
+            <!-- Google Preview -->
+            <div class="pe-seo-preview">
+              <div class="pe-seo-preview__label">Vista previa en Google</div>
+              <div class="pe-seo-preview__card">
+                <div class="pe-seo-preview__url">{{ seoPreviewUrl }}</div>
+                <div class="pe-seo-preview__title">
+                  {{ seoPreviewTitle || 'Título del producto' }}
+                </div>
+                <div class="pe-seo-preview__desc">
+                  {{ (seoPreviewDesc || 'Descripción del producto...').substring(0, 160) }}
+                </div>
+              </div>
+            </div>
+
+            <div class="pe-field">
+              <label class="pe-label" for="metaTitle">Meta título</label>
+              <div class="pe-input-wrap">
+                <input
+                  id="metaTitle"
+                  formControlName="metaTitle"
+                  class="pe-input"
+                  placeholder="Título para resultados de búsqueda"
+                  maxlength="60"
+                />
+                <span
+                  class="pe-counter"
+                  [class.pe-counter--warn]="seoTitleLength > 50"
+                  [class.pe-counter--danger]="seoTitleLength >= 60"
+                >
+                  {{ seoTitleLength }} / 60
+                </span>
+              </div>
+            </div>
+
+            <div class="pe-field">
+              <label class="pe-label" for="metaDescription">Meta descripción</label>
+              <div class="pe-input-wrap">
+                <textarea
+                  id="metaDescription"
+                  formControlName="metaDescription"
+                  class="pe-textarea"
+                  rows="2"
+                  placeholder="Descripción para resultados de búsqueda"
+                  maxlength="160"
+                ></textarea>
+                <span
+                  class="pe-counter"
+                  [class.pe-counter--warn]="seoDescLength > 130"
+                  [class.pe-counter--danger]="seoDescLength >= 160"
+                >
+                  {{ seoDescLength }} / 160
+                </span>
+              </div>
+            </div>
+
+            <div class="pe-field">
+              <label class="pe-label" for="metaKeywords">Palabras clave</label>
+              <div class="pe-input-wrap">
+                <input
+                  id="metaKeywords"
+                  formControlName="metaKeywords"
+                  class="pe-input"
+                  placeholder="Ej: zapatillas, running, deporte"
+                  maxlength="500"
+                />
+                <span class="pe-counter" [class.pe-counter--warn]="keywordsLength > 400">
+                  {{ keywordsLength }} / 500
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- COLLAPSIBLE: ATTRIBUTES                             -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <section id="section-attributes" class="pe-section pe-section--collapsible">
+          <button
+            type="button"
+            class="pe-section__header"
+            (click)="toggleCollapse(secondarySections[1])"
+            aria-expanded="!secondarySections[1].isCollapsed"
+          >
+            <span class="pe-section__icon">📐</span>
+            <div>
+              <h3 class="pe-section__title">Atributos</h3>
+              <p class="pe-section__desc">Material, peso, dimensiones y más</p>
+            </div>
+            <span class="pe-chevron" [class.pe-chevron--open]="!secondarySections[1].isCollapsed"
+              ><i class="fa-solid fa-chevron-down"></i></span
+            >
+          </button>
+          <div
+            class="pe-section__body"
+            [class.pe-section__body--hidden]="secondarySections[1].isCollapsed"
+          >
+            <div class="pe-row">
+              <div class="pe-field pe-field--half">
+                <label class="pe-label" for="material">Material</label>
+                <input
+                  id="material"
+                  formControlName="material"
+                  class="pe-input"
+                  placeholder="Ej: Algodón, Poliéster"
+                />
+              </div>
+              <div class="pe-field pe-field--half">
+                <label class="pe-label" for="weight">Peso (kg)</label>
+                <input
+                  id="weight"
+                  formControlName="weight"
+                  class="pe-input"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+            <div class="pe-row">
+              <div class="pe-field pe-field--half">
+                <label class="pe-label" for="dimensions">Dimensiones</label>
+                <input
+                  id="dimensions"
+                  formControlName="dimensions"
+                  class="pe-input"
+                  placeholder="Ej: 30×20×10 cm"
+                />
+              </div>
+              <div class="pe-field pe-field--half">
+                <label class="pe-label" for="gender">Género</label>
+                <select id="gender" formControlName="gender" class="pe-select">
+                  <option value="">Seleccionar...</option>
+                  <option value="hombre">Hombre</option>
+                  <option value="mujer">Mujer</option>
+                  <option value="unisex">Unisex</option>
+                  <option value="niño">Niño</option>
+                  <option value="niña">Niña</option>
+                </select>
+              </div>
+            </div>
+            <div class="pe-row">
+              <div class="pe-field pe-field--half">
+                <label class="pe-label" for="warranty">Garantía</label>
+                <input
+                  id="warranty"
+                  formControlName="warranty"
+                  class="pe-input"
+                  placeholder="Ej: 1 año"
+                />
+              </div>
+              <div class="pe-field pe-field--half">
+                <label class="pe-label" for="manufacturer">Fabricante</label>
+                <input
+                  id="manufacturer"
+                  formControlName="manufacturer"
+                  class="pe-input"
+                  placeholder="Nombre del fabricante"
+                />
+              </div>
+            </div>
+            <div class="pe-field">
+              <label class="pe-label" for="countryOfOrigin">País de origen</label>
+              <input
+                id="countryOfOrigin"
+                formControlName="countryOfOrigin"
+                class="pe-input"
+                placeholder="Ej: Perú, China"
+              />
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- COLLAPSIBLE: CONFIG                                 -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <section id="section-config" class="pe-section pe-section--collapsible">
+          <button
+            type="button"
+            class="pe-section__header"
+            (click)="toggleCollapse(secondarySections[2])"
+            aria-expanded="!secondarySections[2].isCollapsed"
+          >
+            <span class="pe-section__icon">⚙️</span>
+            <div>
+              <h3 class="pe-section__title">Configuración</h3>
+              <p class="pe-section__desc">Visibilidad, envío y estado</p>
+            </div>
+            <span class="pe-chevron" [class.pe-chevron--open]="!secondarySections[2].isCollapsed"
+              ><i class="fa-solid fa-chevron-down"></i></span
+            >
+          </button>
+          <div
+            class="pe-section__body"
+            [class.pe-section__body--hidden]="secondarySections[2].isCollapsed"
+          >
+            <div class="pe-toggle-group">
+              <label class="pe-toggle-row">
+                <span class="pe-toggle-row__label">Producto activo</span>
+                <input type="checkbox" formControlName="isActive" class="pe-toggle-input" />
+                <span class="pe-toggle-visual"></span>
+              </label>
+              <label class="pe-toggle-row">
+                <span class="pe-toggle-row__label">Producto destacado</span>
+                <input type="checkbox" formControlName="featured" class="pe-toggle-input" />
+                <span class="pe-toggle-visual"></span>
+              </label>
+              <label class="pe-toggle-row">
+                <span class="pe-toggle-row__label">Envío gratuito</span>
+                <input type="checkbox" formControlName="freeShipping" class="pe-toggle-input" />
+                <span class="pe-toggle-visual"></span>
+              </label>
+              <label class="pe-toggle-row">
+                <span class="pe-toggle-row__label">Producto nuevo</span>
+                <input type="checkbox" formControlName="isNew" class="pe-toggle-input" />
+                <span class="pe-toggle-visual"></span>
+              </label>
+            </div>
+            <div class="pe-field">
+              <label class="pe-label" for="visibility">Visibilidad en tienda</label>
+              <select id="visibility" formControlName="visibility" class="pe-select">
+                <option value="visible">Visible</option>
+                <option value="hidden">Oculto</option>
+                <option value="search">Solo buscadores</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- COLLAPSIBLE: HISTORY                                -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <section
+          id="section-history"
+          class="pe-section pe-section--collapsible"
+          *ngIf="priceHistory.length > 0"
         >
-      </div>
-      <div class="form-group flex-1 slug-group">
-        <label>
-          Slug (URL)
           <button
             type="button"
-            class="slug-lock-btn"
-            (click)="toggleSlugLock()"
-            [title]="slugLocked ? 'Desbloquear slug' : 'Bloquear slug'"
+            class="pe-section__header"
+            (click)="toggleCollapse(secondarySections[3])"
+            aria-expanded="!secondarySections[3].isCollapsed"
           >
-            <span *ngIf="slugLocked">🔒</span>
-            <span *ngIf="!slugLocked">🔓</span>
-          </button>
-        </label>
-        <input
-          formControlName="slug"
-          class="form-control"
-          placeholder="zapatillas-running-pro"
-          (input)="onSlugInput()"
-        />
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group flex-1">
-        <label>SKU</label>
-        <input formControlName="sku" class="form-control" placeholder="ZAP-RUN-001" />
-      </div>
-      <div class="form-group flex-1 combo-group">
-        <label>
-          Marca *
-          <button
-            type="button"
-            class="quick-add-btn"
-            (click)="openQuickCreate('brand')"
-            title="Crear nueva marca"
-          >
-            +
-          </button>
-        </label>
-        <div class="combo-wrapper">
-          <input
-            class="form-control combo-input"
-            placeholder="Buscar marca..."
-            [(ngModel)]="brandSearch"
-            [ngModelOptions]="{ standalone: true }"
-            (focus)="onBrandFocus()"
-            (blur)="hideBrandDropdown()"
-          />
-          <button *ngIf="brandSearch" type="button" class="combo-clear" (click)="clearBrand()">
-            ×
-          </button>
-          <div class="combo-dropdown" *ngIf="showBrandDropdown">
-            <div
-              *ngFor="let b of filteredBrands"
-              class="combo-option"
-              [class.selected]="form.value.brandId === b.id"
-              (mousedown)="selectBrand(b)"
-            >
-              {{ b.name }}
+            <span class="pe-section__icon">📊</span>
+            <div>
+              <h3 class="pe-section__title">Historial de precios</h3>
+              <p class="pe-section__desc">{{ priceHistory.length }} cambio(s) registrados</p>
             </div>
-            <div *ngIf="filteredBrands.length === 0" class="combo-empty">Sin resultados</div>
-          </div>
-        </div>
-      </div>
-      <div class="form-group flex-1 combo-group">
-        <label>
-          Categoría *
-          <button
-            type="button"
-            class="quick-add-btn"
-            (click)="openQuickCreate('category')"
-            title="Crear nueva categoría"
-          >
-            +
-          </button>
-        </label>
-        <div class="combo-wrapper">
-          <input
-            class="form-control combo-input"
-            placeholder="Buscar categoría..."
-            [(ngModel)]="categorySearch"
-            [ngModelOptions]="{ standalone: true }"
-            (focus)="onCategoryFocus()"
-            (blur)="hideCategoryDropdown()"
-          />
-          <button
-            *ngIf="categorySearch"
-            type="button"
-            class="combo-clear"
-            (click)="clearCategory()"
-          >
-            ×
-          </button>
-          <div class="combo-dropdown" *ngIf="showCategoryDropdown">
-            <div
-              *ngFor="let c of filteredCategories"
-              class="combo-option"
-              [class.selected]="form.value.categoryId === c.id"
-              (mousedown)="selectCategory(c)"
+            <span class="pe-chevron" [class.pe-chevron--open]="!secondarySections[3].isCollapsed"
+              ><i class="fa-solid fa-chevron-down"></i></span
             >
-              {{ c.name }}
-            </div>
-            <div *ngIf="filteredCategories.length === 0" class="combo-empty">Sin resultados</div>
+          </button>
+          <div
+            class="pe-section__body"
+            [class.pe-section__body--hidden]="secondarySections[3].isCollapsed"
+          >
+            <table class="pe-history-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Precio anterior</th>
+                  <th>Precio nuevo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let h of priceHistory">
+                  <td>{{ h.changedAt | date: 'short' }}</td>
+                  <td class="pe-text-muted">S/ {{ h.oldPrice | number: '1.2-2' }}</td>
+                  <td>S/ {{ h.newPrice | number: '1.2-2' }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ─── Description ────────────────────────────────────── -->
-    <div class="section-title">Descripción</div>
-
-    <div class="form-group">
-      <label>Descripción corta</label>
-      <input
-        formControlName="shortDescription"
-        class="form-control"
-        placeholder="Breve descripción para tarjetas"
-      />
-    </div>
-
-    <div class="form-group">
-      <label>Descripción completa</label>
-      <textarea
-        formControlName="description"
-        class="form-control"
-        rows="4"
-        placeholder="Descripción detallada del producto"
-      ></textarea>
-    </div>
-
-    <!-- ─── Variants Matrix ────────────────────────────────── -->
-    <div class="section-title">Configurar variantes (Colores × Tallas)</div>
-
-    <div class="variant-selector-row">
-      <div class="variant-selector">
-        <label>
-          Colores
-          <button
-            type="button"
-            class="quick-add-btn quick-add-btn-sm"
-            (click)="openQuickCreate('color')"
-            title="Crear nuevo color"
-          >
-            +
-          </button>
-        </label>
-        <div class="chip-group">
-          <button
-            *ngFor="let c of colors"
-            type="button"
-            class="chip"
-            [class.chip-active]="selectedColorIds.has(c.id)"
-            (click)="toggleColorInMatrix(c.id)"
-          >
-            <span class="chip-color" [style.background]="c.hexCode || '#000'"></span>
-            {{ c.name }}
-          </button>
-          <div *ngIf="colors.length === 0" class="chip-empty">No hay colores registrados</div>
-        </div>
-      </div>
-      <div class="variant-selector">
-        <label>
-          Tallas
-          <button
-            type="button"
-            class="quick-add-btn quick-add-btn-sm"
-            (click)="openQuickCreate('size')"
-            title="Crear nueva talla"
-          >
-            +
-          </button>
-        </label>
-        <div class="chip-group">
-          <button
-            *ngFor="let s of sizes"
-            type="button"
-            class="chip"
-            [class.chip-active]="selectedSizeIds.has(s.id)"
-            (click)="toggleSizeInMatrix(s.id)"
-          >
-            {{ s.name }}
-          </button>
-          <div *ngIf="sizes.length === 0" class="chip-empty">No hay tallas registradas</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Generated Matrix Table -->
-    <div class="section-title">Matriz de variantes</div>
-
-    <div class="variant-matrix-wrap" *ngIf="variantMatrix.length > 0">
-      <table class="variant-matrix-table">
-        <thead>
-          <tr>
-            <th>Variante</th>
-            <th>SKU</th>
-            <th>Precio</th>
-            <th>Precio comparativo</th>
-            <th>Stock</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let row of variantMatrix; let i = index">
-            <td class="vm-cell-label">
-              <span
-                class="variant-color-dot"
-                *ngIf="row.colorHex"
-                [style.background]="row.colorHex"
-              ></span>
-              <span class="vm-label-text">
-                <ng-container *ngIf="row.colorName">{{ row.colorName }}</ng-container>
-                <ng-container *ngIf="row.colorName && row.sizeName"> / </ng-container>
-                <ng-container *ngIf="row.sizeName">{{ row.sizeName }}</ng-container>
-                <ng-container *ngIf="!row.colorName && !row.sizeName">Variante única</ng-container>
-              </span>
-            </td>
-            <td>
-              <input
-                class="vm-input"
-                [(ngModel)]="row.sku"
-                [ngModelOptions]="{ standalone: true }"
-                placeholder="SKU"
-              />
-            </td>
-            <td>
-              <input
-                class="vm-input vm-input-price"
-                type="text"
-                inputmode="decimal"
-                [(ngModel)]="row.price"
-                [ngModelOptions]="{ standalone: true }"
-                placeholder="0.00"
-              />
-            </td>
-            <td>
-              <input
-                class="vm-input vm-input-price"
-                type="text"
-                inputmode="decimal"
-                [(ngModel)]="row.compareAtPrice"
-                [ngModelOptions]="{ standalone: true }"
-                placeholder="0.00"
-              />
-            </td>
-            <td>
-              <input
-                class="vm-input vm-input-stock"
-                type="text"
-                inputmode="numeric"
-                [(ngModel)]="row.stock"
-                [ngModelOptions]="{ standalone: true }"
-                placeholder="0"
-              />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p class="matrix-hint">
-        Los valores se guardarán como variantes al crear/actualizar el producto.
-      </p>
-    </div>
-
-    <div *ngIf="variantMatrix.length === 0" class="empty-variants">
-      <p>Selecciona colores y/o tallas arriba para generar la matriz de variantes.</p>
-    </div>
-
-    <!-- ─── Images ─────────────────────────────────────────── -->
-    <div class="section-title">Imágenes</div>
-
-    <div
-      class="images-dropzone"
-      [class.drag-over]="dragOver"
-      (dragover)="onDragOver($event)"
-      (dragleave)="onDragLeave($event)"
-      (drop)="onDrop($event)"
-      (click)="triggerFileInput()"
-    >
-      <input
-        #fileInput
-        type="file"
-        accept="image/*"
-        multiple
-        style="display: none"
-        (change)="onFileSelected($event)"
-      />
-      <div class="dropzone-content" *ngIf="images.length === 0">
-        <span class="dropzone-icon">📷</span>
-        <p>Arrastra imágenes aquí o haz clic para seleccionar</p>
-      </div>
-      <div class="dropzone-content" *ngIf="images.length > 0">
-        <span class="dropzone-icon">📷</span>
-        <p class="dropzone-text">Arrastra más imágenes o haz clic para agregar</p>
-      </div>
-    </div>
-
-    <div class="images-grid" *ngIf="images.length > 0">
-      <div class="image-card" *ngFor="let img of images">
-        <img [src]="img.imageUrl" [alt]="img.altText || 'Imagen del producto'" />
-        <div class="image-overlay">
-          <button
-            type="button"
-            class="img-btn img-main-btn"
-            [class.is-main]="img.isMain"
-            (click)="setMainImage(img.id)"
-            [title]="img.isMain ? 'Imagen principal' : 'Marcar como principal'"
-          >
-            ★
-          </button>
-          <button
-            type="button"
-            class="img-btn img-delete-btn"
-            (click)="removeImage(img.id)"
-            title="Eliminar imagen"
-          >
-            ×
-          </button>
-        </div>
-        <div class="image-badge" *ngIf="img.isMain">Principal</div>
-      </div>
-    </div>
-
-    <!-- ─── Tags ───────────────────────────────────────────── -->
-    <div class="section-title">Etiquetas</div>
-
-    <div class="form-group">
-      <label>Etiquetas (escribe y presiona Enter o coma)</label>
-      <input
-        #tagInput
-        class="form-control"
-        [(ngModel)]="tagInputValue"
-        [ngModelOptions]="{ standalone: true }"
-        placeholder="Ej: Verano, Running, Oferta"
-        (keydown)="onTagKeydown($event)"
-        (blur)="onTagBlur($event)"
-      />
-      <div class="tags-display" *ngIf="tags.length > 0">
-        <span class="tag-chip" *ngFor="let tag of tags; let i = index">
-          {{ tag }}
-          <button type="button" class="tag-remove" (click)="removeTag(i)">×</button>
-        </span>
-      </div>
-    </div>
-
-    <!-- ─── Status ─────────────────────────────────────────── -->
-    <div class="section-title">Estado</div>
-
-    <div class="form-row checkboxes">
-      <label class="checkbox-label">
-        <input type="checkbox" formControlName="isActive" />
-        Producto activo
-      </label>
-      <label class="checkbox-label">
-        <input type="checkbox" formControlName="featured" />
-        Producto destacado
-      </label>
-    </div>
-
-    <!-- ─── Actions ────────────────────────────────────────── -->
-    <div class="actions">
-      <button class="btn btn-primary" type="submit" [disabled]="form.invalid || saving">
-        <span *ngIf="saving">Guardando...</span>
-        <span *ngIf="!saving">{{ isNew ? 'Crear producto' : 'Guardar cambios' }}</span>
-      </button>
-      <a class="btn btn-ghost" routerLink="/admin/catalog/products">Cancelar</a>
-    </div>
-  </form>
+        </section>
+      </form>
+    </main>
+  </div>
 </div>
 
 <!-- ─── Quick Create Modal ───────────────────────────────── -->
@@ -402,3 +1197,29 @@
   (created)="onQuickCreated($event)"
   (cancelled)="onQuickCancelled()"
 ></app-quick-create-modal>
+
+<!-- ─── Delete Image Confirmation Modal ──────────────────── -->
+<div class="pe-modal-overlay" *ngIf="showDeleteImageModal" (click)="cancelDeleteImage()">
+  <div
+    class="pe-modal"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Confirmar eliminación"
+  >
+    <p class="pe-modal__message">¿Eliminar esta imagen?</p>
+    <p class="pe-modal__warning">La imagen se eliminará permanentemente.</p>
+    <div class="pe-modal__actions">
+      <button class="pe-btn pe-btn--ghost" (click)="cancelDeleteImage()" [disabled]="deletingImage">
+        Cancelar
+      </button>
+      <button
+        class="pe-btn pe-btn--danger"
+        (click)="executeDeleteImage()"
+        [disabled]="deletingImage"
+      >
+        {{ deletingImage ? 'Eliminando...' : 'Eliminar' }}
+      </button>
+    </div>
+  </div>
+</div>

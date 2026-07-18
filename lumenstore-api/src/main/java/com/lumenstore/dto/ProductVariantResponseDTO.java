@@ -11,6 +11,8 @@ import java.math.BigDecimal;
 public class ProductVariantResponseDTO {
     private Long id;
     private String sku;
+    private Long sizeId;
+    private Long colorId;
     private String sizeName;
     private String colorName;
     private String colorHex;

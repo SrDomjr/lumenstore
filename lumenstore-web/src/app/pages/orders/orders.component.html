@@ -1,32 +1,42 @@
-<div class="orders-container">
-  <h1>My Orders</h1>
+<div class="page">
+  <h1>Mis pedidos</h1>
+  <p class="subtitle">Consulta el estado y detalle de tus compras</p>
 
-  <div *ngIf="loading" class="loading">Loading...</div>
-
-  <div *ngIf="!loading && orders.length === 0" class="empty">
-    <p>No orders yet.</p>
+  <div class="tabs">
+    <button *ngFor="let tab of tabs" class="tab" [class.active]="activeTab === tab.key"
+            (click)="setTab(tab.key)">{{ tab.label }}</button>
   </div>
 
-  <div *ngIf="!loading && orders.length > 0" class="orders">
-    <table>
-      <thead>
-        <tr>
-          <th>Order Number</th>
-          <th>Date</th>
-          <th>Total</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let order of orders">
-          <td>{{ order.orderNumber }}</td>
-          <td>{{ order.createdAt | date }}</td>
-          <td>S/. {{ order.total | number: '1.2-2' }}</td>
-          <td>{{ order.status }}</td>
-          <td><a [routerLink]="['/orders', order.id]">View</a></td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="toolbar">
+    <input type="text" class="search-order" placeholder="Buscar por número de pedido"
+           [(ngModel)]="searchQuery" (input)="applyFilters()">
+    <select class="date-select" [(ngModel)]="dateFilter" (change)="applyFilters()">
+      <option value="3months">Últimos 3 meses</option>
+      <option value="1year">Último año</option>
+      <option value="all">Todo el historial</option>
+    </select>
+  </div>
+
+  <div *ngIf="loading" class="empty-state">
+    <p>Cargando pedidos...</p>
+  </div>
+
+  <div *ngIf="!loading && filteredOrders.length === 0" class="empty-state">
+    <p>No se encontraron pedidos.</p>
+  </div>
+
+  <div *ngIf="!loading && filteredOrders.length > 0">
+    <div class="order-card" *ngFor="let order of filteredOrders" (click)="openOrder(order.id)">
+      <div class="order-info">
+        <div class="order-number">Pedido #{{ order.orderNumber }}</div>
+        <div class="order-meta">{{ formatDate(order.createdAt) }}</div>
+        <div class="order-items-count">{{ getItemCount(order) }} producto{{ getItemCount(order) !== 1 ? 's' : '' }}</div>
+      </div>
+      <div class="order-status-col">
+        <div><span class="status-badge" [ngClass]="getStatusClass(order.status)">{{ getStatusLabel(order.status) }}</span></div>
+        <div class="order-total">S/ {{ order.total | number: '1.2-2' }}</div>
+      </div>
+      <span class="chevron">›</span>
+    </div>
   </div>
 </div>

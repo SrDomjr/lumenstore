@@ -8,5 +8,5 @@ import java.util.List;
 @Repository
 public interface IBannerRepository extends JpaRepository<Banner, Long> {
     List<Banner> findByIsActiveTrueOrderBySortOrder();
-    List<Banner> findByPositionAndIsActiveTrueOrderBySortOrder(String position);
+    List<Banner> findByPositionAndIsActiveTrueOrderBySortOrder(Banner.Position position);
 }

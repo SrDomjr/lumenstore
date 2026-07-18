@@ -54,6 +54,24 @@ export class NotificationService {
     this.toast('warning', message, title);
   }
 
+  /**
+   * Extrae un mensaje legible desde un error HTTP del backend (ErrorResponseDTO).
+   * Si el backend no envió un mensaje específico (ej. caída de red), usa el fallback.
+   */
+  extractErrorMessage(err: any, fallback: string): string {
+    const backendMessage = err?.error?.message;
+    const fieldErrors = err?.error?.fieldErrors;
+    if (fieldErrors && Array.isArray(fieldErrors) && fieldErrors.length > 0) {
+      return fieldErrors.map((f: any) => f.message).join(' · ');
+    }
+    return backendMessage || fallback;
+  }
+
+  /** Muestra un toast de error tomando el mensaje específico del backend cuando existe. */
+  apiError(err: any, fallback: string, title?: string): void {
+    this.error(this.extractErrorMessage(err, fallback), title);
+  }
+
   // ──────────────────────────────────────────────
   //  SweetAlert2: diálogos que requieren atención
   // ──────────────────────────────────────────────

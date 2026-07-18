@@ -1,5 +1,6 @@
 package com.lumenstore.dto;
 
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 
@@ -12,4 +13,7 @@ public class CategoriaResponseDTO {
     private String description;
     private String imageUrl;
     private Boolean isActive;
+    private Long parentId;
+    private Integer sortOrder;
+    private List<CategoriaResponseDTO> children;
 }

@@ -10,4 +10,5 @@ public interface IProductReviewRepository extends JpaRepository<ProductReview, L
     List<ProductReview> findByProductId(Long productId);
     List<ProductReview> findByProductIdAndIsApprovedTrue(Long productId);
     List<ProductReview> findByProductIdAndIsApprovedTrueOrderByCreatedAtDesc(Long productId);
+    List<ProductReview> findTop5ByIsApprovedFalseOrderByCreatedAtDesc();
 }

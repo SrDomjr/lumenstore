@@ -1,16 +1,20 @@
-<div class="admin-users container">
-  <div class="header-panel">
-    <div>
-      <span class="eyebrow">Administración</span>
-      <h1>Usuarios</h1>
-    </div>
+<div class="admin-users admin-fade-in">
+  <app-admin-page-header title="Usuarios" [breadcrumb]="[{label:'Admin', link:'/admin/dashboard'}, {label:'Seguridad'}, {label:'Usuarios'}]">
+    <app-admin-button variant="primary">
+      <i class="fa-solid fa-plus"></i> Nuevo usuario
+    </app-admin-button>
+  </app-admin-page-header>
+
+  <div *ngIf="loading" class="loading-panel" style="display: flex; gap: 8px; flex-direction: column;">
+    <app-admin-skeleton type="row" *ngFor="let _ of [1,2,3,4,5]"></app-admin-skeleton>
   </div>
 
-  <div *ngIf="loading" class="loading-panel">Cargando usuarios...</div>
+  <div *ngIf="error && !loading" class="error-banner" style="display: flex; align-items: center; gap: 12px; padding: 16px 20px; background: var(--admin-danger-bg); border: 1px solid var(--admin-danger); color: var(--admin-danger); font-size: var(--admin-font-size-base); margin-bottom: 24px;">
+    <i class="fa-solid fa-circle-exclamation"></i>
+    <span>{{ error }}</span>
+  </div>
 
-  <div *ngIf="error && !loading" class="alert alert-danger">{{ error }}</div>
-
-  <div class="table-wrap" *ngIf="!loading && !error && users.length">
+  <div class="admin-table-container" *ngIf="!loading && !error && users.length">
     <table class="admin-table">
       <thead>
         <tr>
@@ -23,21 +27,22 @@
       </thead>
       <tbody>
         <tr *ngFor="let u of users">
-          <td class="cell-id">#{{ u.id }}</td>
-          <td>{{ u.firstName }} {{ u.lastName }}</td>
+          <td class="admin-text-muted">#{{ u.id }}</td>
+          <td style="font-weight: 500;">{{ u.firstName }} {{ u.lastName }}</td>
           <td>{{ u.email }}</td>
           <td>
-            <span class="badge" [class.badge-primary]="u.roleId === 1">
-              {{ u.roleId === 1 ? 'Admin' : 'Cliente' }}
-            </span>
+            <app-admin-badge [variant]="u.roleId === 1 ? 'info' : 'neutral'" [label]="u.roleId === 1 ? 'Admin' : 'Cliente'"></app-admin-badge>
           </td>
-          <td class="text-muted">{{ u.createdAt | date: 'short' }}</td>
+          <td class="admin-text-muted">{{ u.createdAt | date: 'short' }}</td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <div *ngIf="!loading && !error && !users.length" class="empty-state">
-    <p>No hay usuarios registrados.</p>
-  </div>
+  <app-admin-empty-state
+    *ngIf="!loading && !error && !users.length"
+    title="Sin usuarios"
+    message="No hay usuarios registrados en el sistema."
+    icon="fa-regular fa-user">
+  </app-admin-empty-state>
 </div>

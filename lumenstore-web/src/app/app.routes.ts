@@ -125,6 +125,16 @@ export const routes: Routes = [
           import('./pages/admin/attributes.component').then((m) => m.AdminAttributesComponent),
       },
       {
+        path: 'sales',
+        loadComponent: () =>
+          import('./pages/admin/sales-list.component').then((m) => m.AdminSalesListComponent),
+      },
+      {
+        path: 'sales/:id',
+        loadComponent: () =>
+          import('./pages/admin/sales-detail.component').then((m) => m.AdminSalesDetailComponent),
+      },
+      {
         path: 'orders',
         loadComponent: () =>
           import('./pages/admin/orders.component').then((m) => m.AdminOrdersComponent),

@@ -1,59 +1,175 @@
-<!-- ─── SECCIÓN DE BIENVENIDA + KPIs ─── -->
-<section class="admin-hero">
-  <div class="hero-text">
-    <span class="eyebrow">Panel de administración</span>
-    <h1>Admin de Lumenstore</h1>
-  </div>
+<div class="dashboard-wrapper admin-fade-in">
 
-  <div class="kpi-group">
-    <div class="kpi-card" *ngFor="let kpi of kpis">
-      <span class="kpi-label">{{ kpi.label }}</span>
-      <span class="kpi-value">
-        <ng-container *ngIf="kpi.isCurrency">S/. </ng-container>
-        {{ kpi.value }}
-      </span>
-      <span class="kpi-trend" *ngIf="kpi.trend === 'up'">↑</span>
-      <span class="kpi-trend down" *ngIf="kpi.trend === 'down'">↓</span>
+  <!-- Page Header -->
+  <app-admin-page-header title="Dashboard" subtitle="Resumen de actividad de la tienda">
+    <app-admin-button variant="secondary" (click)="loadStats()">
+      <i class="fa-solid fa-arrows-rotate"></i> Actualizar
+    </app-admin-button>
+    <app-admin-button variant="primary" routerLink="/admin/sales">
+      <i class="fa-solid fa-plus"></i> Nueva Venta
+    </app-admin-button>
+  </app-admin-page-header>
+
+  <!-- Loading State -->
+  <ng-container *ngIf="loading">
+    <div class="kpi-grid">
+      <div class="kpi-card" *ngFor="let _ of [1,2,3,4]">
+        <app-admin-skeleton type="line" width="120px" height="12px"></app-admin-skeleton>
+        <app-admin-skeleton type="line" width="180px" height="36px" style="margin-top: 12px;"></app-admin-skeleton>
+      </div>
     </div>
-  </div>
-</section>
-
-<!-- ─── CONTENIDO DEL DASHBOARD ─── -->
-<section class="dashboard-content">
-  <!-- Gráfico de ingresos -->
-  <div class="chart-section">
-    <h2>Ingresos de los últimos 7 días</h2>
-    <div class="chart-container">
-      <canvas id="revenueChart"></canvas>
+    <div class="dashboard-grid">
+      <div class="kpi-card">
+        <app-admin-skeleton type="card" height="300px"></app-admin-skeleton>
+      </div>
+      <div class="kpi-card">
+        <app-admin-skeleton type="card" height="300px"></app-admin-skeleton>
+      </div>
     </div>
+  </ng-container>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-banner">
+    <i class="fa-solid fa-circle-exclamation"></i>
+    <span>{{ error }}</span>
+    <app-admin-button variant="ghost" size="sm" (click)="loadStats()">Reintentar</app-admin-button>
   </div>
 
-  <!-- Últimos movimientos -->
-  <div class="table-section">
-    <h2>Últimos Movimientos</h2>
-    <table class="recent-orders-table">
-      <thead>
-        <tr>
-          <th>ID Pedido</th>
-          <th>Cliente</th>
-          <th>Fecha</th>
-          <th>Total</th>
-          <th>Estado</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let order of recentOrders">
-          <td>{{ order.id }}</td>
-          <td>{{ order.customer }}</td>
-          <td>{{ order.date }}</td>
-          <td>S/. {{ order.total }}</td>
-          <td>
-            <span class="status" [ngClass]="order.statusClass">
-              {{ order.status }}
-            </span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</section>
+  <!-- Dashboard Content -->
+  <ng-container *ngIf="!loading && !error && stats">
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card" *ngFor="let kpi of kpis">
+        <div class="kpi-header">
+          <span class="kpi-label">{{ kpi.label }}</span>
+          <span class="kpi-trend-badge" [ngClass]="getKpiTrend(kpi.key)">
+            <i class="fa-solid"
+               [class.fa-arrow-trend-up]="getKpiTrend(kpi.key) === 'up'"
+               [class.fa-arrow-trend-down]="getKpiTrend(kpi.key) === 'down'"
+               [class.fa-minus]="getKpiTrend(kpi.key) === 'neutral'"></i>
+          </span>
+        </div>
+        <div class="kpi-value">
+          <span class="kpi-currency" *ngIf="kpi.isCurrency">S/.</span>
+          <span *ngIf="kpi.isCurrency">{{ formatCurrency(+getKpiValue(kpi.key)) }}</span>
+          <span *ngIf="kpi.isPercent">{{ getKpiValue(kpi.key) }}%</span>
+          <span *ngIf="!kpi.isCurrency && !kpi.isPercent">{{ getKpiValue(kpi.key) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart + Recent Orders -->
+    <div class="dashboard-grid">
+      <div class="kpi-card chart-card">
+        <div class="card-top">
+          <h3 class="card-title">Ventas — últimos 7 días</h3>
+        </div>
+        <div class="chart-container">
+          <canvas id="revenueChart"></canvas>
+        </div>
+      </div>
+
+      <div class="kpi-card orders-card">
+        <div class="card-top">
+          <h3 class="card-title">Últimos pedidos</h3>
+          <a routerLink="/admin/sales" class="card-link">Ver todos</a>
+        </div>
+
+        <div *ngIf="!stats.recentOrders?.length" class="card-empty">
+          <p class="admin-text-muted">No hay pedidos recientes.</p>
+        </div>
+
+        <div class="orders-list" *ngIf="stats.recentOrders?.length">
+          <div class="order-row" *ngFor="let order of stats.recentOrders">
+            <div class="order-main">
+              <span class="order-number">#{{ order.orderNumber }}</span>
+              <span class="order-customer">{{ order.customerName }}</span>
+            </div>
+            <div class="order-meta">
+              <span class="order-date">{{ formatOrderDate(order.createdAt) }}</span>
+              <span class="order-total">S/. {{ formatCurrency(order.total) }}</span>
+              <app-admin-badge [variant]="getStatusVariant(order.status)" [label]="formatOrderStatus(order.status)"></app-admin-badge>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stock Alerts + Pending Reviews -->
+    <div class="dashboard-grid">
+      <!-- Stock Alerts -->
+      <div class="kpi-card">
+        <div class="card-top">
+          <h3 class="card-title">
+            <i class="fa-solid fa-triangle-exclamation" style="color: var(--admin-gold); margin-right: 6px;"></i>
+            Alertas de stock
+          </h3>
+          <span class="card-count" *ngIf="stats.stockAlerts?.length">{{ stats.stockAlerts.length }}</span>
+        </div>
+
+        <div *ngIf="!stats.stockAlerts?.length" class="card-empty">
+          <p class="admin-text-muted">No hay alertas de stock activas.</p>
+        </div>
+
+        <div class="alerts-list" *ngIf="stats.stockAlerts?.length">
+          <div class="alert-row" *ngFor="let alert of stats.stockAlerts">
+            <div class="alert-info">
+              <span class="alert-product">{{ alert.productName }}</span>
+              <span class="alert-variant">{{ alert.variantInfo }}</span>
+            </div>
+            <div class="alert-stock">
+              <span class="stock-value" [class.stock-critical]="alert.stock === 0" [class.stock-low]="alert.stock > 0">
+                {{ alert.stock }}
+              </span>
+              <span class="stock-threshold">/ {{ alert.threshold }}</span>
+            </div>
+            <app-admin-badge
+              [variant]="alert.stock === 0 ? 'danger' : 'warning'"
+              [label]="getStockStatus(alert)">
+            </app-admin-badge>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pending Reviews -->
+      <div class="kpi-card">
+        <div class="card-top">
+          <h3 class="card-title">
+            <i class="fa-regular fa-star" style="color: var(--admin-gold); margin-right: 6px;"></i>
+            Reseñas por moderar
+          </h3>
+          <span class="card-count" *ngIf="stats.pendingReviews?.length">{{ stats.pendingReviews.length }}</span>
+        </div>
+
+        <div *ngIf="!stats.pendingReviews?.length" class="card-empty">
+          <p class="admin-text-muted">No hay reseñas pendientes.</p>
+        </div>
+
+        <div class="reviews-list" *ngIf="stats.pendingReviews?.length">
+          <div class="review-row" *ngFor="let review of stats.pendingReviews">
+            <div class="review-main">
+              <span class="review-product">{{ review.productName }}</span>
+              <span class="review-customer">{{ review.customerName }}</span>
+            </div>
+            <div class="review-rating">
+              <span class="stars">
+                <i *ngFor="let s of [1,2,3,4,5]"
+                   class="fa-star"
+                   [class.fa-solid]="s <= review.rating"
+                   [class.fa-regular]="s > review.rating"></i>
+              </span>
+            </div>
+            <p class="review-excerpt">{{ review.comment }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Last Updated -->
+    <div class="last-updated" *ngIf="lastUpdated">
+      Actualizado a las {{ lastUpdated }}
+    </div>
+
+  </ng-container>
+</div>

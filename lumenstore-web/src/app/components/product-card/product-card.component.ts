@@ -10,9 +10,15 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
+import { CloudinaryUrlPipe } from '../../pipes/cloudinary-url.pipe';
 import { WishlistService } from '../../services/wishlist.service';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
+
+export interface ProductCardColor {
+  name: string;
+  hexCode: string;
+}
 
 export interface ProductCardModel {
   id: number;
@@ -22,8 +28,7 @@ export interface ProductCardModel {
   images?: string[];
   price: number;
   compare_at_price?: number | null;
-  averageRating?: number;
-  reviewCount?: number;
+  colors?: ProductCardColor[];
   inStock?: boolean;
   hasVariants?: boolean;
 }
@@ -31,7 +36,7 @@ export interface ProductCardModel {
 @Component({
   selector: 'app-product-card',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, CloudinaryUrlPipe],
   templateUrl: './product-card.component.html',
   styleUrls: ['./product-card.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,8 +65,8 @@ export class ProductCardComponent implements OnInit {
     return Math.round((diff / this.product.compare_at_price) * 100);
   }
 
-  get avgRating(): string {
-    return (this.product.averageRating || 0).toFixed(1);
+  get primaryImage(): string {
+    return this.product.images?.[0] || '/assets/placeholder.png';
   }
 
   ngOnInit(): void {
@@ -158,10 +163,6 @@ export class ProductCardComponent implements OnInit {
       },
       error: () => this.notification.error('No se pudo crear lista de favoritos'),
     });
-  }
-
-  onCompare(e: Event) {
-    e.stopPropagation();
   }
 
   private getClientId(): number | null {

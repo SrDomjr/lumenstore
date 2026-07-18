@@ -33,9 +33,6 @@ export class ProductService extends ApiService {
     if (filters.maxPrice != null) {
       params.push(`maxPrice=${filters.maxPrice}`);
     }
-    if (filters.activeOnly != null) {
-      params.push(`activeOnly=${filters.activeOnly}`);
-    }
     params.push(`page=${page}`);
     params.push(`size=${size}`);
     const queryString = params.length ? `?${params.join('&')}` : '';
@@ -48,18 +45,6 @@ export class ProductService extends ApiService {
 
   getProductBySlug(slug: string): Observable<ProductoResponseDTO> {
     return this.get<ProductoResponseDTO>(`/products/slug/${encodeURIComponent(slug)}`);
-  }
-
-  searchProducts(query: string): Observable<Producto[]> {
-    return this.get<Producto[]>(`/products/search?q=${query}`);
-  }
-
-  getProductsByCategory(categoryId: number): Observable<Producto[]> {
-    return this.get<Producto[]>(`/products/category/${categoryId}`);
-  }
-
-  getProductsByBrand(brandId: number): Observable<Producto[]> {
-    return this.get<Producto[]>(`/products/brand/${brandId}`);
   }
 
   getProductImages(productId: number): Observable<ProductImage[]> {
@@ -84,8 +69,28 @@ export class ProductService extends ApiService {
     return this.get<ProductQuestion[]>(`/products/${productId}/questions`);
   }
 
-  askQuestion(question: any): Observable<ProductQuestion> {
+  createQuestion(question: any): Observable<ProductQuestion> {
     return this.post<ProductQuestion>(`/products/questions`, question);
+  }
+
+  // Related products (by category)
+  getRelatedProducts(productId: number, categoryId?: number): Observable<Producto[]> {
+    const cat = categoryId ? `?categoryId=${categoryId}` : '';
+    return this.get<Producto[]>(`/products/${productId}/related${cat}`);
+  }
+
+  // Public endpoints used by product-list
+  getProductsByCategory(categoryId: number): Observable<any> {
+    return this.get<any>(`/products/category/${categoryId}?page=0&size=12`);
+  }
+
+  getProductsByBrand(brandId: number): Observable<any> {
+    // No dedicated brand endpoint exists; use the filter endpoint
+    return this.get<any>(`/products?brandId=${brandId}&page=0&size=12`);
+  }
+
+  searchProducts(query: string): Observable<any> {
+    return this.get<any>(`/products?q=${encodeURIComponent(query)}&page=0&size=12`);
   }
 
   // Brands
@@ -124,11 +129,15 @@ export class ProductService extends ApiService {
   }
 
   // Admin — obtiene TODOS los productos (activos e inactivos)
-  getAdminProducts(filters: any = {}, page: number = 0, size: number = 100): Observable<any> {
+  getAdminProducts(filters: any = {}, page: number = 0, size: number = 1000): Observable<any> {
     const params: string[] = [];
     if (filters.categoryId) params.push(`categoryId=${filters.categoryId}`);
     if (filters.brandId) params.push(`brandId=${filters.brandId}`);
     if (filters.query) params.push(`q=${encodeURIComponent(filters.query)}`);
+    // Antes este filtro se armaba en el componente pero nunca se enviaba al
+    // backend, así que "Solo activos" / "Solo inactivos" no tenía ningún
+    // efecto real en el listado.
+    if (filters.isActive != null) params.push(`isActive=${filters.isActive}`);
     params.push(`page=${page}`);
     params.push(`size=${size}`);
     const queryString = params.length ? `?${params.join('&')}` : '';

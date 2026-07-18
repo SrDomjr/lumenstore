@@ -37,17 +37,19 @@ public interface IProductoRepository extends JpaRepository<Producto, Long> {
             @Param("maxPrice") BigDecimal maxPrice,
             Pageable pageable);
 
-    // Admin: mostrar TODOS los productos (sin filtrar por isActive)
+    // Admin: mostrar TODOS los productos (sin filtrar por isActive) salvo que
+    // se pida explícitamente un estado concreto vía el parámetro isActive.
     @Query("SELECT DISTINCT p FROM Producto p " +
-           "LEFT JOIN p.variants v " +
            "WHERE (:categoryId IS NULL OR p.category.id = :categoryId) " +
            "AND (:brandId IS NULL OR p.brand.id = :brandId) " +
+           "AND (:isActive IS NULL OR p.isActive = :isActive) " +
            "AND (:query IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) " +
            "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :query, '%')))")
     Page<Producto> findByFiltersAdmin(
             @Param("categoryId") Long categoryId,
             @Param("brandId") Long brandId,
             @Param("query") String query,
+            @Param("isActive") Boolean isActive,
             Pageable pageable);
 
     // Productos destacados
@@ -60,5 +62,19 @@ public interface IProductoRepository extends JpaRepository<Producto, Long> {
     List<Producto> findDistinctByIsActiveTrueAndDiscountsIsNotEmpty(Pageable pageable);
     
     Optional<Producto> findBySlug(String slug);
+
+    long countByCategoryIdAndIsActiveTrue(Long categoryId);
+
+    long countByBrandIdAndIsActiveTrue(Long brandId);
+
+    // ─── Reglas de unicidad de negocio (slug y SKU son únicos por producto) ───
+
+    boolean existsBySlugIgnoreCase(String slug);
+
+    boolean existsBySlugIgnoreCaseAndIdNot(String slug, Long id);
+
+    boolean existsBySkuIgnoreCase(String sku);
+
+    boolean existsBySkuIgnoreCaseAndIdNot(String sku, Long id);
 
 }

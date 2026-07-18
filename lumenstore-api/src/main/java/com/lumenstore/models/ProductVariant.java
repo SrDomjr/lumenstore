@@ -22,7 +22,7 @@ public class ProductVariant {
     @JoinColumn(name = "product_id", nullable = false)
     private Producto product;
 
-    @Column(length = 50, unique = true)
+    @Column(name = "sku", length = 50, unique = true)
     private String sku;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -39,6 +39,7 @@ public class ProductVariant {
     @Column(name = "compare_at_price", precision = 12, scale = 2)
     private BigDecimal compareAtPrice;
 
+    @Column(name = "stock")
     private Integer stock = 0;
 
     @Column(name = "is_active")

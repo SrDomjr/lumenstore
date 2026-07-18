@@ -4,10 +4,12 @@ package com.lumenstore.controller;
 import com.lumenstore.dto.ProductoRequestDTO;
 import com.lumenstore.dto.ProductoResponseDTO;
 import com.lumenstore.dto.ProductVariantResponseDTO;
-import com.lumenstore.models.ProductImage;
+import com.lumenstore.dto.ProductImageResponseDTO;
 import com.lumenstore.models.ProductVariant;
 import com.lumenstore.repository.IProductImageRepository;
 import com.lumenstore.repository.IProductVariantRepository;
+import com.lumenstore.services.FileStorageService;
+import com.lumenstore.services.IProductImageService;
 import com.lumenstore.services.ProductoService;
 
 import jakarta.validation.Valid;
@@ -29,6 +31,8 @@ import java.util.Map;
 public class ProductoController {
 
     private final ProductoService productService;
+    private final FileStorageService fileStorageService;
+    private final IProductImageService productImageService;
     private final IProductVariantRepository variantRepository;
     private final IProductImageRepository imageRepository;
 
@@ -81,6 +85,26 @@ public class ProductoController {
         return ResponseEntity.ok(productService.getProductBySlug(slug));
     }
 
+    @GetMapping("/slug-exists")
+    public ResponseEntity<Map<String, Boolean>> slugExists(
+            @RequestParam String slug,
+            @RequestParam(required = false) Long excludeId) {
+        boolean exists = (excludeId != null)
+                ? productService.slugExistsForOther(slug, excludeId)
+                : productService.slugExists(slug);
+        return ResponseEntity.ok(Map.of("exists", exists));
+    }
+
+    @GetMapping("/sku-exists")
+    public ResponseEntity<Map<String, Boolean>> skuExists(
+            @RequestParam String sku,
+            @RequestParam(required = false) Long excludeId) {
+        boolean exists = (excludeId != null)
+                ? productService.skuExistsForOther(sku, excludeId)
+                : productService.skuExists(sku);
+        return ResponseEntity.ok(Map.of("exists", exists));
+    }
+
     @GetMapping("/{productId}/variants")
     public ResponseEntity<List<ProductVariantResponseDTO>> getProductVariants(
             @PathVariable Long productId) {
@@ -126,18 +150,25 @@ public class ProductoController {
         return ResponseEntity.ok(productService.updateVariant(variantId, body));
     }
 
+    @DeleteMapping("/variants/{variantId}")
+    public ResponseEntity<Void> deleteVariant(@PathVariable Long variantId) {
+        productService.deleteVariant(variantId);
+        return ResponseEntity.noContent().build();
+    }
+
     // ─── Images ───────────────────────────────────────────────
 
     @GetMapping("/{productId}/images")
-    public ResponseEntity<List<ProductImage>> getProductImages(@PathVariable Long productId) {
-        return ResponseEntity.ok(imageRepository.findByProductIdOrderBySortOrderAsc(productId));
+    public ResponseEntity<List<ProductImageResponseDTO>> getProductImages(@PathVariable Long productId) {
+        return ResponseEntity.ok(productImageService.getImagesByProduct(productId));
     }
 
     @PostMapping("/{productId}/images")
-    public ResponseEntity<List<ProductImage>> uploadImages(
+    public ResponseEntity<List<ProductImageResponseDTO>> uploadImages(
             @PathVariable Long productId,
-            @RequestParam("files") List<MultipartFile> files) {
-        return ResponseEntity.ok(productService.uploadImages(productId, files));
+            @RequestParam("files") List<MultipartFile> files,
+            @RequestParam(value = "variantId", required = false) Long variantId) {
+        return ResponseEntity.ok(productService.uploadImages(productId, files, variantId));
     }
 
     @PutMapping("/{productId}/images/{imageId}/main")
@@ -152,8 +183,38 @@ public class ProductoController {
     public ResponseEntity<Void> deleteImage(
             @PathVariable Long productId,
             @PathVariable Long imageId) {
-        imageRepository.deleteById(imageId);
+        // Se valida que la imagen pertenezca al producto de la URL antes de
+        // borrarla: productImageService.delete(imageId) por sí solo no hace
+        // esa verificación, así que sin este chequeo se podía eliminar una
+        // imagen de OTRO producto solo conociendo su id.
+        boolean belongsToProduct = productImageService.getImagesByProduct(productId).stream()
+                .anyMatch(img -> img.getId().equals(imageId));
+        if (!belongsToProduct) {
+            throw com.lumenstore.exception.ResourceNotFoundException.of("Imagen", imageId);
+        }
+        productImageService.delete(imageId);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Endpoint de administración para limpiar imágenes huérfanas
+     * (registros con URLs locales de migraciones previas).
+     * <p>
+     * Al migrar de almacenamiento local a Cloudinary, las imágenes viejas
+     * con URLs como {@code /uploads/...} o {@code http://localhost:8080/...}
+     * quedan en BD pero sin archivos físicos. Este endpoint las elimina.
+     * <p>
+     * Llamada: {@code DELETE /api/v1/products/images/cleanup}
+     */
+    @DeleteMapping("/images/cleanup")
+    public ResponseEntity<Map<String, Object>> cleanupOrphanedImages() {
+        int deleted = productImageService.cleanupOrphanedImages();
+        return ResponseEntity.ok(Map.of(
+                "deleted", deleted,
+                "message", deleted > 0
+                        ? "Se eliminaron " + deleted + " imágenes huérfanas."
+                        : "No se encontraron imágenes huérfanas para limpiar."
+        ));
     }
 
     // ─── Tags ─────────────────────────────────────────────────
@@ -175,5 +236,22 @@ public class ProductoController {
     public ResponseEntity<Void> deleteProductTags(@PathVariable Long productId) {
         productService.updateProductTags(productId, List.of());
         return ResponseEntity.noContent().build();
+    }
+
+    // ─── Reviews (placeholder) ────────────────────────────────
+
+    /**
+     * Endpoint para obtener las reseñas de un producto.
+     * Actualmente retorna lista vacía hasta que se implemente el submódulo de reseñas.
+     * Se mantiene para evitar errores 404 en la página de detalle del producto.
+     */
+    @GetMapping("/{productId}/reviews")
+    public ResponseEntity<List<?>> getProductReviews(@PathVariable Long productId) {
+        return ResponseEntity.ok(List.of());
+    }
+
+    @PostMapping("/reviews")
+    public ResponseEntity<Void> createReview(@RequestBody Map<String, Object> body) {
+        return ResponseEntity.ok().build();
     }
 }

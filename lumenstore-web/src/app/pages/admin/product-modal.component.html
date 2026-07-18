@@ -1,0 +1,423 @@
+<div class="pm-modal-host">
+<app-admin-modal
+  [open]="open"
+  [size]="'lg'"
+  [title]="isNew ? 'Crear producto' : 'Editar producto'"
+  [closeOnOverlay]="false"
+  (close)="requestClose()"
+>
+  <!-- Header Customization -->
+  <div class="pm-header-custom">
+    <div class="pm-header-custom__status" *ngIf="!isNew">
+      <span class="pm-status" [class.pm-status--active]="form.get('isActive')?.value">
+        {{ form.get('isActive')?.value ? 'Activo' : 'Borrador' }}
+      </span>
+    </div>
+    <div class="pm-header-custom__progress">
+      <span class="pm-progress-text">Completado: {{ getSectionProgress() }}/4</span>
+      <div class="pm-progress-bar">
+        <div class="pm-progress-fill" [style.width.%]="(getSectionProgress() / 4) * 100"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body Content -->
+  <div class="pm-layout">
+    <!-- Left Column: Tabs & Form -->
+    <div class="pm-main">
+      <nav class="pm-tabs">
+        <button class="pm-tab" [class.pm-tab--active]="activeTab === 'general'" (click)="setTab('general')">General</button>
+        <button class="pm-tab" [class.pm-tab--active]="activeTab === 'variants'" (click)="setTab('variants')">Variantes</button>
+        <button class="pm-tab" [class.pm-tab--active]="activeTab === 'images'" (click)="setTab('images')">Imágenes</button>
+        <button class="pm-tab" [class.pm-tab--active]="activeTab === 'seo'" (click)="setTab('seo')">SEO y Etiquetas</button>
+      </nav>
+
+      <div class="pm-form-container" *ngIf="!loading">
+        <form [formGroup]="form" (ngSubmit)="save()" class="pm-form">
+
+          <!-- Global hidden inputs (always in DOM) -->
+          <input #fileInput type="file" accept="image/*" multiple style="display: none" (change)="onFileSelected($event)">
+          <input #variantFileInput type="file" accept="image/*" style="display: none" (change)="onVariantFileSelected($event)">
+
+          <!-- Tab: General -->
+          <div *ngIf="activeTab === 'general'" class="pm-tab-content">
+            <div class="pm-field">
+              <label class="pm-label">NOMBRE DEL PRODUCTO <span class="pm-required">*</span></label>
+              <div class="pm-input-wrap">
+                <input formControlName="name" class="pm-input" placeholder="Ej: Zapatillas Running Pro" maxlength="255">
+                <span class="pm-counter" [class.pm-counter--warn]="nameLength > 200">{{ nameLength }}/255</span>
+              </div>
+              <small class="pm-error" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">El nombre es obligatorio</small>
+            </div>
+
+            <div class="pm-field">
+              <label class="pm-label">
+                SLUG
+                <button type="button" class="pm-slug-lock" (click)="toggleSlugLock()">
+                  <i class="fa-solid" [class.fa-lock]="slugLocked" [class.fa-lock-open]="!slugLocked"></i>
+                </button>
+              </label>
+              <div class="pm-input-wrap">
+                <input formControlName="slug" class="pm-input" placeholder="zapatillas-running-pro" (input)="onSlugInput()">
+                <span class="pm-field-status">
+                  <span class="pm-spinner-sm" *ngIf="slugChecking"></span>
+                  <span class="pm-check-icon" *ngIf="!slugChecking && form.get('slug')?.valid && form.get('slug')?.value"><i class="fa-solid fa-check"></i></span>
+                </span>
+              </div>
+              <small class="pm-error" *ngIf="form.get('slug')?.errors?.['slugTaken']">Este slug ya está en uso</small>
+            </div>
+
+            <div class="pm-field">
+              <label class="pm-label">DESCRIPCIÓN CORTA</label>
+              <input formControlName="shortDescription" class="pm-input" placeholder="Breve descripción para listados" maxlength="500">
+            </div>
+
+            <div class="pm-field">
+              <label class="pm-label">DESCRIPCIÓN COMPLETA</label>
+              <textarea formControlName="description" class="pm-textarea" rows="4" placeholder="Descripción detallada del producto" maxlength="5000"></textarea>
+            </div>
+            
+            <div class="pm-row">
+              <div class="pm-field pm-field--half">
+                <label class="pm-label">MARCA <span class="pm-required">*</span></label>
+                <div class="pm-combo">
+                  <input class="pm-input pm-combo__input" placeholder="Buscar marca..." [(ngModel)]="brandSearch" [ngModelOptions]="{standalone: true}" (focus)="showBrandDropdown = true" (blur)="delayedClose('brand')">
+                  <div class="pm-combo__dropdown" *ngIf="showBrandDropdown && filteredBrands.length > 0">
+                    <button type="button" class="pm-combo__option" *ngFor="let b of filteredBrands" [class.pm-combo__option--selected]="form.value.brandId === b.id" (mousedown)="selectBrand(b)">{{ b.name }}</button>
+                  </div>
+                </div>
+              </div>
+              <div class="pm-field pm-field--half">
+                <label class="pm-label">CATEGORÍA <span class="pm-required">*</span></label>
+                <div class="pm-combo">
+                  <input class="pm-input pm-combo__input" placeholder="Buscar categoría..." [(ngModel)]="categorySearch" [ngModelOptions]="{standalone: true}" (focus)="showCategoryDropdown = true" (blur)="delayedClose('category')">
+                  <div class="pm-combo__dropdown" *ngIf="showCategoryDropdown && filteredCategories.length > 0">
+                    <button type="button" class="pm-combo__option" *ngFor="let c of filteredCategories" [class.pm-combo__option--selected]="form.value.categoryId === c.id" (mousedown)="selectCategory(c)">{{ c.name }}</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pm-toggle-row">
+              <span class="pm-toggle-label">Producto destacado</span>
+              <label class="pm-switch">
+                <input type="checkbox" formControlName="featured">
+                <span class="pm-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Tab: Variants -->
+          <div *ngIf="activeTab === 'variants'" class="pm-tab-content">
+            <div class="pm-variant-selector">
+              <div class="pm-label-row">
+                <label class="pm-label">COLORES</label>
+                <button type="button" class="pm-add-btn" (click)="openQuickCreate('color')">+ Agregar</button>
+              </div>
+              <div class="pm-color-grid">
+                <button *ngFor="let c of colors" type="button" class="pm-color-chip" [class.pm-color-chip--active]="selectedColorIds.has(c.id)" (click)="toggleColor(c.id)" [style.--color]="c.hexCode || '#000'">
+                  <span class="pm-color-chip__swatch"><i class="fa-solid fa-check" *ngIf="selectedColorIds.has(c.id)"></i></span>
+                  <span class="pm-color-chip__name">{{ c.name }}</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="pm-variant-selector">
+              <div class="pm-label-row">
+                <label class="pm-label">TALLAS</label>
+                <button type="button" class="pm-add-btn" (click)="openQuickCreate('size')">+ Agregar</button>
+              </div>
+              <div class="pm-size-grid">
+                <button *ngFor="let s of sizes" type="button" class="pm-size-chip" [class.pm-size-chip--active]="selectedSizeIds.has(s.id)" (click)="toggleSize(s.id)">
+                  {{ s.name }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Matrix -->
+            <div class="pm-matrix" *ngIf="variantMatrix.length > 0">
+              <!-- Toolbar -->
+              <div class="pm-matrix__toolbar">
+                <div class="pm-matrix__toolbar-left">
+                  <span class="pm-matrix__title">MATRIZ DE VARIANTES</span>
+                  <span class="pm-matrix__count">{{ variantMatrix.length }}</span>
+                  <span class="pm-matrix__selected" *ngIf="selectedVariantIds.size > 0">{{ selectedVariantIds.size }} seleccionada(s)</span>
+                </div>
+                <div class="pm-matrix__toolbar-actions">
+                  <button type="button" class="pm-matrix__bulk-btn" [class.pm-matrix__bulk-btn--active]="bulkMode === 'price'" (click)="toggleBulkMode('price')">
+                    <i class="fa-solid fa-dollar-sign"></i> Precio masivo
+                  </button>
+                  <button type="button" class="pm-matrix__bulk-btn" [class.pm-matrix__bulk-btn--active]="bulkMode === 'stock'" (click)="toggleBulkMode('stock')">
+                    <i class="fa-solid fa-boxes-stacked"></i> Stock masivo
+                  </button>
+                  <button type="button" class="pm-matrix__bulk-btn" (click)="triggerBulkImageUpload()" [disabled]="selectedVariantIds.size === 0">
+                    <i class="fa-solid fa-images"></i> Imágenes masivas
+                  </button>
+                </div>
+              </div>
+              <input #bulkImageInput type="file" accept="image/*" multiple style="display: none" (change)="onBulkImageSelected($event)">
+
+              <!-- Bulk image confirm row -->
+              <div class="pm-matrix__bulk-row pm-matrix__bulk-row--image" *ngIf="bulkImageFiles.length > 0">
+                <span class="pm-matrix__bulk-label">
+                  <i class="fa-solid fa-images"></i>
+                  {{ bulkImageFiles.length }} imagen(es) → {{ selectedVariantIds.size }} variante(s)
+                </span>
+                <div class="pm-matrix__bulk-previews">
+                  <div class="pm-matrix__bulk-preview" *ngFor="let f of bulkImageFiles; let fi = index">
+                    <img [src]="f.preview" alt="">
+                    <button type="button" class="pm-matrix__bulk-preview-del" (click)="removeBulkImageFile(fi)"><i class="fa-solid fa-xmark"></i></button>
+                  </div>
+                </div>
+                <button type="button" class="pm-btn pm-btn--primary pm-btn--sm" (click)="confirmBulkImageUpload()" [disabled]="isUploading">
+                  <span class="pm-btn-spinner" *ngIf="isUploading"></span>
+                  {{ isUploading ? 'Subiendo...' : 'Subir ahora' }}
+                </button>
+                <button type="button" class="pm-matrix__bulk-cancel" (click)="bulkImageFiles = []">Cancelar</button>
+              </div>
+
+              <!-- Bulk input row -->
+              <div class="pm-matrix__bulk-row" *ngIf="bulkMode">
+                <span class="pm-matrix__bulk-label">{{ bulkMode === 'price' ? 'Precio para ' : 'Stock para ' }}{{ selectedVariantIds.size }} variante(s)</span>
+                <input class="pm-input pm-input--xs" [type]="'number'" [attr.step]="bulkMode === 'price' ? '0.01' : '1'" [attr.min]="0" [(ngModel)]="bulkValue" [placeholder]="bulkMode === 'price' ? '0.00' : '0'" [ngModelOptions]="{standalone: true}">
+                <button type="button" class="pm-btn pm-btn--primary pm-btn--sm" (click)="applyBulkMode()" [disabled]="selectedVariantIds.size === 0 || bulkValue === null">Aplicar</button>
+                <button type="button" class="pm-matrix__bulk-cancel" (click)="bulkMode = null; bulkValue = null">Cancelar</button>
+              </div>
+
+              <!-- Table -->
+              <div class="pm-matrix__table-wrap">
+                <table class="pm-matrix__table">
+                  <thead>
+                    <tr>
+                      <th class="pm-matrix__th-check">
+                        <label class="pm-checkbox">
+                          <input type="checkbox" [checked]="allSelected" (change)="toggleSelectAll()">
+                          <span class="pm-checkbox__mark"></span>
+                        </label>
+                      </th>
+                      <th class="pm-matrix__th-img">Imagen</th>
+                      <th>Variante</th>
+                      <th>SKU</th>
+                      <th>Precio (S/)</th>
+                      <th>Stock</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let row of variantMatrix; let i = index"
+                        [class.pm-matrix__row--selected]="selectedVariantIds.has(i)"
+                        [class.pm-matrix__row--warn]="getVariantHint(row) !== null">
+                      <td class="pm-matrix__td-check">
+                        <label class="pm-checkbox">
+                          <input type="checkbox" [checked]="selectedVariantIds.has(i)" (change)="toggleSelectVariant(i)">
+                          <span class="pm-checkbox__mark"></span>
+                        </label>
+                      </td>
+                      <td class="pm-matrix__td-img">
+                        <button type="button" class="pm-matrix__img-btn" (click)="openImagePopover(i, $event)" [title]="row.images.length > 0 ? 'Ver / agregar imágenes' : 'Asignar imagen'">
+                          <img *ngIf="row.images.length > 0" [src]="row.images[0]" class="pm-matrix__thumb" alt="">
+                          <i *ngIf="row.images.length === 0" class="fa-solid fa-plus"></i>
+                        </button>
+                        <span class="pm-matrix__img-count" *ngIf="row.images.length > 1">+{{ row.images.length - 1 }}</span>
+                      </td>
+                      <td class="pm-matrix__label">
+                        <span class="pm-matrix__color-dot" *ngIf="row.colorHex" [style.background]="row.colorHex"></span>
+                        <span>{{ getVariantLabel(row) }}</span>
+                      </td>
+                      <td><input class="pm-matrix__input pm-matrix__input--sku" [(ngModel)]="row.sku" [ngModelOptions]="{standalone: true}" placeholder="Automático" disabled></td>
+                      <td>
+                        <div class="pm-matrix__cell-stack">
+                          <input class="pm-matrix__input pm-matrix__input--price" [class.pm-matrix__input--warn]="row.price !== null && row.price < 0" type="number" step="0.01" min="0" [(ngModel)]="row.price" [ngModelOptions]="{standalone: true}" placeholder="0.00">
+                          <span class="pm-matrix__hint pm-matrix__hint--warn" *ngIf="getVariantHint(row) === 'Precio requerido'">{{ getVariantHint(row) }}</span>
+                          <span class="pm-matrix__hint pm-matrix__hint--muted" *ngIf="getVariantHint(row) === 'Sin precio'">{{ getVariantHint(row) }}</span>
+                          <span class="pm-matrix__hint pm-matrix__hint--danger" *ngIf="getVariantHint(row) === 'Precio no puede ser negativo'">{{ getVariantHint(row) }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="pm-matrix__cell-stack">
+                          <input class="pm-matrix__input pm-matrix__input--stock" [class.pm-matrix__input--warn]="row.stock !== null && row.stock < 0" type="number" step="1" min="0" [(ngModel)]="row.stock" [ngModelOptions]="{standalone: true}" placeholder="0">
+                          <span class="pm-matrix__hint pm-matrix__hint--danger" *ngIf="getVariantHint(row) === 'Stock no puede ser negativo'">{{ getVariantHint(row) }}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Image Popover (absolutely positioned) -->
+            <div class="pm-img-popover" *ngIf="imagePopoverIndex !== null" (click)="$event.stopPropagation()">
+              <div class="pm-img-popover__header">
+                <span class="pm-img-popover__title">Seleccionar imagen para: {{ popoverRow ? getVariantLabel(popoverRow) : '' }}</span>
+                <button type="button" class="pm-img-popover__close" (click)="closeImagePopover()"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <div class="pm-img-popover__body">
+                <!-- Thumbnail strip -->
+                <div class="pm-img-popover__thumbs" *ngIf="popoverRow && popoverRow.images.length > 0">
+                  <div class="pm-img-popover__thumb" *ngFor="let img of popoverRow.images; let j = index">
+                    <img [src]="img" alt="">
+                    <button type="button" class="pm-img-popover__thumb-del" (click)="removeVariantImage(imagePopoverIndex!, j)" title="Eliminar">
+                      <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                  </div>
+                </div>
+                <!-- Dropzone -->
+                <div class="pm-img-popover__dropzone" (click)="openImagePickerForVariant(imagePopoverIndex!)" (dragover)="onPopoverDragOver($event)" (dragleave)="onPopoverDragLeave($event)" (drop)="onPopoverDrop($event)" [class.pm-img-popover__dropzone--drag]="popoverDragOver">
+                  <i class="fa-solid fa-camera"></i>
+                  <span>Subir imágenes</span>
+                </div>
+              </div>
+            </div>
+            <!-- Backdrop for popover -->
+            <div class="pm-img-popover-backdrop" *ngIf="imagePopoverIndex !== null" (click)="closeImagePopover()"></div>
+
+            <app-admin-empty-state *ngIf="variantMatrix.length === 0" title="Aún no agregaste colores" message="Selecciona colores y/o tallas para generar las variantes" icon="fa-solid fa-layer-group"></app-admin-empty-state>
+          </div>
+
+          <!-- Tab: Images -->
+          <div *ngIf="activeTab === 'images'" class="pm-tab-content">
+            <div class="pm-dropzone" [class.pm-dropzone--active]="dragOver" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)" (click)="triggerFileInput()">
+              <div class="pm-dropzone__content">
+                <i class="fa-solid fa-cloud-arrow-up pm-dropzone__icon"></i>
+                <p class="pm-dropzone__text">Arrastra imágenes aquí o haz clic para seleccionar</p>
+                <p class="pm-dropzone__hint">JPG, PNG, WEBP, GIF, AVIF · Máx. 10 MB cada una</p>
+              </div>
+            </div>
+
+            <div class="pm-upload-progress" *ngIf="isUploading">
+              <div class="pm-progress-bar"><div class="pm-progress-fill" [style.width.%]="uploadProgress"></div></div>
+              <span class="pm-upload-text">{{ uploadProgress }}%</span>
+            </div>
+
+            <div class="pm-pending-section" *ngIf="pendingPreviews.length > 0">
+              <div class="pm-pending-header">
+                <span>{{ pendingPreviews.length }} imagen(es) pendiente(s)</span>
+                <button type="button" class="pm-btn pm-btn--primary pm-btn--sm" (click)="uploadPendingImagesNow()" [disabled]="saving || isUploading">
+                  {{ (!productId && !saving) ? 'Guardar primero y subir' : 'Subir ahora' }}
+                </button>
+              </div>
+              <div class="pm-image-grid">
+                <div class="pm-image-card pm-image-card--pending" *ngFor="let preview of pendingPreviews; let i = index">
+                  <img [src]="preview.url" alt="Preview">
+                  <button type="button" class="pm-image-remove" (click)="removePendingImage(i)"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <div class="pm-image-grid" *ngIf="images.length > 0">
+              <div class="pm-image-card" *ngFor="let img of images; let i = index" [class.pm-image-card--drag-over]="dragOverImageIndex === i" draggable="true" (dragstart)="onImageDragStart(i)" (dragover)="onImageDragOver($event, i)" (drop)="onImageDrop($event)" (dragend)="onImageDragEnd()">
+                <img [src]="img.imageUrl | cloudinaryUrl: 300 : 'thumb'" [alt]="img.altText || 'Imagen'">
+                <div class="pm-image-overlay">
+                  <button type="button" class="pm-image-btn pm-image-btn--main" [class.pm-image-btn--is-main]="img.isMain" (click)="setMainImage(img.id)" [title]="img.isMain ? 'Principal' : 'Marcar principal'"><i class="fa-solid fa-star"></i></button>
+                  <button type="button" class="pm-image-btn pm-image-btn--delete" (click)="confirmDeleteImage(img.id)"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+                <span class="pm-image-badge" *ngIf="img.isMain">Principal</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: SEO -->
+          <div *ngIf="activeTab === 'seo'" class="pm-tab-content">
+            <div class="pm-seo-preview">
+              <span class="pm-seo-preview__label">VISTA PREVIA EN GOOGLE</span>
+              <div class="pm-seo-preview__card">
+                <div class="pm-seo-preview__url">{{ seoPreviewUrl }}</div>
+                <div class="pm-seo-preview__title">{{ seoPreviewTitle || 'Título del producto' }}</div>
+                <div class="pm-seo-preview__desc">{{ (seoPreviewDesc || 'Descripción...').substring(0, 160) }}</div>
+              </div>
+            </div>
+
+            <div class="pm-field">
+              <label class="pm-label">META TÍTULO</label>
+              <div class="pm-input-wrap">
+                <input formControlName="metaTitle" class="pm-input" placeholder="Título para resultados de búsqueda" maxlength="60">
+                <span class="pm-counter" [class.pm-counter--danger]="seoTitleLength >= 60">{{ seoTitleLength }}/60</span>
+              </div>
+            </div>
+
+            <div class="pm-field">
+              <label class="pm-label">META DESCRIPCIÓN</label>
+              <textarea formControlName="metaDescription" class="pm-textarea" rows="2" placeholder="Descripción para resultados de búsqueda" maxlength="160"></textarea>
+            </div>
+
+            <div class="pm-field">
+              <label class="pm-label">ETIQUETAS</label>
+              <div class="pm-tag-input">
+                <input #tagInput class="pm-input" [(ngModel)]="tagInputValue" [ngModelOptions]="{standalone: true}" placeholder="Escribe y presiona Enter" (keydown)="onTagKeydown($event)" (blur)="onTagBlur($event)">
+              </div>
+              <div class="pm-tags" *ngIf="tags.length > 0">
+                <span class="pm-tag" *ngFor="let tag of tags; let i = index">
+                  {{ tag }}
+                  <button type="button" class="pm-tag__remove" (click)="removeTag(i)"><i class="fa-solid fa-xmark"></i></button>
+                </span>
+              </div>
+            </div>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Loading Skeleton -->
+      <div class="pm-loading" *ngIf="loading">
+        <div class="pm-skeleton pm-skeleton--title"></div>
+        <div class="pm-skeleton pm-skeleton--text"></div>
+        <div class="pm-skeleton pm-skeleton--block"></div>
+      </div>
+    </div>
+
+    <!-- Right Column: Preview -->
+    <div class="pm-sidebar">
+      <div class="pm-preview-card">
+        <div class="pm-preview-image">
+          <img *ngIf="images.length > 0" [src]="images[0].imageUrl | cloudinaryUrl: 300 : 'thumb'" alt="Preview">
+          <div *ngIf="images.length === 0" class="pm-preview-placeholder">
+            <i class="fa-regular fa-image"></i>
+          </div>
+        </div>
+        <div class="pm-preview-info">
+          <h4 class="pm-preview-name">{{ form.get('name')?.value || 'Nombre del producto' }}</h4>
+          <div class="pm-preview-price">
+            <span class="pm-price-current" *ngIf="minPrice">S/ {{ minPrice }}</span>
+            <span class="pm-price-empty" *ngIf="!minPrice">Sin precio</span>
+          </div>
+          <div class="pm-preview-meta">
+            <span><i class="fa-solid fa-box"></i> {{ totalStock }} unidades</span>
+            <span><i class="fa-solid fa-layer-group"></i> {{ variantMatrix.length }} variantes</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Actions -->
+  <div modal-footer class="pm-footer">
+    <div class="pm-footer__left">
+      <span class="pm-footer__shortcut">Ctrl+S para guardar</span>
+    </div>
+    <div class="pm-footer__right">
+      <button class="pm-btn pm-btn--ghost" type="button" (click)="requestClose()" [disabled]="saving">Cancelar</button>
+      <button class="pm-btn pm-btn--outline" type="button" (click)="saveAsDraft()" [disabled]="saving || form.invalid">
+        Guardar borrador
+      </button>
+      <button class="pm-btn pm-btn--primary" type="button" (click)="save()" [disabled]="saving || form.invalid">
+        <span class="pm-btn-spinner" *ngIf="saving"></span>
+        {{ isNew ? 'Publicar producto' : 'Guardar cambios' }}
+      </button>
+    </div>
+  </div>
+
+</app-admin-modal>
+</div>
+
+<!-- Delete Image Modal -->
+<div class="pm-modal-overlay" *ngIf="showDeleteImageModal" (click)="cancelDeleteImage()">
+  <div class="pm-modal" (click)="$event.stopPropagation()">
+    <p class="pm-modal__title">¿Eliminar esta imagen?</p>
+    <p class="pm-modal__desc">Esta acción no se puede deshacer.</p>
+    <div class="pm-modal__actions">
+      <button class="pm-btn pm-btn--ghost" (click)="cancelDeleteImage()" [disabled]="deletingImage">Cancelar</button>
+      <button class="pm-btn pm-btn--danger" (click)="executeDeleteImage()" [disabled]="deletingImage">{{ deletingImage ? 'Eliminando...' : 'Eliminar' }}</button>
+    </div>
+  </div>
+</div>
+
+<app-quick-create-modal [visible]="showQuickModal" [type]="quickModalType" (created)="onQuickCreated($event)" (cancelled)="onQuickCancelled()"></app-quick-create-modal>
