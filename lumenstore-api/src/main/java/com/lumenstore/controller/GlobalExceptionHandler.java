@@ -67,6 +67,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponseDTO> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Validación fallida: {}", ex.getMessage());
+        ErrorResponseDTO response = new ErrorResponseDTO(ex.getMessage(), null);
+        return ResponseEntity.badRequest().body(response);
+    }
+
     // ─── Fallback genérico: cualquier otro RuntimeException no controlado ───
 
     @ExceptionHandler(RuntimeException.class)

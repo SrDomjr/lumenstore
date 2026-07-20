@@ -1,20 +1,169 @@
-<div class="addresses-container">
-  <h1>My Addresses</h1>
+<div class="page">
 
-  <div *ngIf="loading" class="loading">Loading...</div>
-
-  <div *ngIf="!loading && addresses.length === 0" class="empty">
-    <p>No addresses yet. Add one to continue.</p>
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>Mis direcciones</h1>
+      <p class="subtitle">Administra tus direcciones de envío y facturación</p>
+    </div>
+    <button class="btn btn-primary" (click)="openAddModal()">+ Agregar dirección</button>
   </div>
 
-  <div *ngIf="!loading && addresses.length > 0" class="addresses">
-    <div *ngFor="let address of addresses" class="address-card">
-      <p>
-        <strong>{{ address.street }}</strong>
-      </p>
-      <p>{{ address.city }}, {{ address.state }} {{ address.postalCode }}</p>
-      <p>{{ address.country }}</p>
-      <button (click)="deleteAddress(address.id)" class="btn btn-danger">Delete</button>
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-state">
+    <p>Cargando direcciones...</p>
+  </div>
+
+  <!-- Empty state -->
+  <div *ngIf="!loading && addresses.length === 0" class="empty-state">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+      <path d="M12 2C7 2 4 6 4 10c0 6 8 12 8 12s8-6 8-12c0-4-3-8-8-8z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
+    <p>Aún no tienes direcciones guardadas</p>
+    <button class="btn btn-primary" (click)="openAddModal()">+ Agregar mi primera dirección</button>
+  </div>
+
+  <!-- Address grid -->
+  <div class="address-grid" *ngIf="!loading && addresses.length > 0">
+
+    <div
+      class="address-card"
+      *ngFor="let addr of addresses; trackBy: trackById"
+      [class.is-default]="addr.isDefault"
+    >
+      <div class="card-top">
+        <div class="card-tags">
+          <span class="tag tag-default" *ngIf="addr.isDefault">Predeterminada</span>
+          <span class="tag tag-type">{{ typeLabel(addr.addressType) }}</span>
+        </div>
+      </div>
+      <div class="card-address">
+        {{ addr.street }}<br>
+        {{ addr.city }}, {{ addr.state }} {{ addr.postalCode }}<br>
+        {{ addr.country }}
+      </div>
+      <div class="card-actions">
+        <button
+          class="card-set-default"
+          *ngIf="!addr.isDefault"
+          (click)="setDefault(addr)"
+        >Marcar como predeterminada</button>
+        <button class="btn-text" (click)="openEditModal(addr)">Editar</button>
+        <button class="btn-text danger" (click)="openDeleteModal(addr)">Eliminar</button>
+      </div>
+    </div>
+
+    <!-- Add card -->
+    <div class="add-card" (click)="openAddModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Agregar nueva dirección</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ MODAL: ADD / EDIT ============ -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ modalMode === 'add' ? 'Agregar dirección' : 'Editar dirección' }}</h2>
+      <button class="modal-close" (click)="closeModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <line x1="4" y1="4" x2="20" y2="20"/><line x1="20" y1="4" x2="4" y2="20"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Tipo de dirección</label>
+        <div class="type-selector">
+          <div
+            class="type-option"
+            [class.selected]="formAddressType === 'shipping'"
+            (click)="formAddressType = 'shipping'"
+          >Envío</div>
+          <div
+            class="type-option"
+            [class.selected]="formAddressType === 'billing'"
+            (click)="formAddressType = 'billing'"
+          >Facturación</div>
+          <div
+            class="type-option"
+            [class.selected]="formAddressType === 'both'"
+            (click)="formAddressType = 'both'"
+          >Ambas</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Dirección</label>
+        <input
+          type="text"
+          placeholder="Av. / Calle / Jr., número, dpto."
+          [(ngModel)]="formStreet"
+        >
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Ciudad</label>
+          <input type="text" placeholder="Lima" [(ngModel)]="formCity">
+        </div>
+        <div class="field">
+          <label>Departamento / Estado</label>
+          <input type="text" placeholder="Lima" [(ngModel)]="formState">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Código postal</label>
+          <input type="text" placeholder="15074" [(ngModel)]="formPostalCode">
+        </div>
+        <div class="field">
+          <label>País</label>
+          <select [(ngModel)]="formCountry">
+            <option *ngFor="let c of countries" [value]="c">{{ c }}</option>
+          </select>
+        </div>
+      </div>
+      <label class="checkbox-row">
+        <input type="checkbox" [(ngModel)]="formIsDefault">
+        Usar como dirección predeterminada
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" (click)="closeModal()">Cancelar</button>
+      <button
+        class="btn btn-primary"
+        [disabled]="saving || !formStreet || !formCity"
+        (click)="saveAddress()"
+      >{{ saving ? 'Guardando...' : (modalMode === 'add' ? 'Guardar dirección' : 'Guardar cambios') }}</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: CONFIRM DELETE ============ -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+  <div class="modal confirm-delete" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Eliminar dirección</h2>
+      <button class="modal-close" (click)="closeDeleteModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <line x1="4" y1="4" x2="20" y2="20"/><line x1="20" y1="4" x2="4" y2="20"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>¿Seguro que quieres eliminar esta dirección? Esta acción no se puede deshacer.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" (click)="closeDeleteModal()">Cancelar</button>
+      <button
+        class="btn btn-danger"
+        [disabled]="saving"
+        (click)="confirmDelete()"
+      >{{ saving ? 'Eliminando...' : 'Sí, eliminar' }}</button>
     </div>
   </div>
 </div>

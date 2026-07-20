@@ -12,9 +12,7 @@ import {
 import { AdminPageHeaderComponent } from '../../components/admin/admin-page-header.component';
 import { AdminButtonComponent } from '../../components/admin/admin-button.component';
 import { AdminBadgeComponent } from '../../components/admin/admin-badge.component';
-import { AdminCardComponent } from '../../components/admin/admin-card.component';
 import { AdminSkeletonComponent } from '../../components/admin/admin-skeleton.component';
-import { AdminEmptyStateComponent } from '../../components/admin/admin-empty-state.component';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -25,9 +23,7 @@ import { AdminEmptyStateComponent } from '../../components/admin/admin-empty-sta
     AdminPageHeaderComponent,
     AdminButtonComponent,
     AdminBadgeComponent,
-    AdminCardComponent,
     AdminSkeletonComponent,
-    AdminEmptyStateComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],

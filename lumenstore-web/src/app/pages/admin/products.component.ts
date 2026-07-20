@@ -8,9 +8,7 @@ import { Subject, forkJoin, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { AdminPageHeaderComponent } from '../../components/admin/admin-page-header.component';
 import { AdminButtonComponent } from '../../components/admin/admin-button.component';
-import { AdminBadgeComponent } from '../../components/admin/admin-badge.component';
-import { AdminEmptyStateComponent } from '../../components/admin/admin-empty-state.component';
-import { AdminSkeletonComponent } from '../../components/admin/admin-skeleton.component';
+
 import { ProductModalComponent } from './product-modal.component';
 
 @Component({
@@ -22,9 +20,6 @@ import { ProductModalComponent } from './product-modal.component';
     FormsModule,
     AdminPageHeaderComponent,
     AdminButtonComponent,
-    AdminBadgeComponent,
-    AdminEmptyStateComponent,
-    AdminSkeletonComponent,
     ProductModalComponent,
   ],
   templateUrl: './products.component.html',
@@ -520,5 +515,13 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
 
   isLowStock(stock: number): boolean {
     return stock != null && stock < 10;
+  }
+
+  trackByProductId(_index: number, product: any): any {
+    return product.id;
+  }
+
+  trackByIndex(index: number): number {
+    return index;
   }
 }

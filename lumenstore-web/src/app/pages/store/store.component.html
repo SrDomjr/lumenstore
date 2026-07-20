@@ -52,7 +52,7 @@
         <button
           type="button"
           class="filter-option"
-          *ngFor="let c of categories"
+          *ngFor="let c of categories; trackBy: trackById"
           [class.active]="selectedCategory === c.id"
           (click)="selectedCategory = c.id; loadProducts()"
         >
@@ -83,7 +83,7 @@
         <button
           type="button"
           class="filter-option"
-          *ngFor="let b of brands"
+          *ngFor="let b of brands; trackBy: trackById"
           [class.active]="selectedBrand === b.id"
           (click)="selectedBrand = b.id; loadProducts()"
         >
@@ -118,7 +118,7 @@
 
     <div class="grid" *ngIf="!loading && products.length">
       <app-product-card
-        *ngFor="let p of products"
+        *ngFor="let p of products; trackBy: trackByProductId"
         [product]="p"
         (addToCartEvent)="addToCart($event)"
       ></app-product-card>

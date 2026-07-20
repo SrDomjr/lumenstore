@@ -1,27 +1,200 @@
-<div class="admin-order container">
-  <div *ngIf="loading">Cargando...</div>
-  <div *ngIf="!loading && order">
-    <h1>Pedido {{ order.orderNumber || order.id }}</h1>
-    <p><strong>Cliente:</strong> {{ order.customerName || order.clienteName }}</p>
-    <p><strong>Total:</strong> {{ order.total | number: '1.2-2' }}</p>
-    <p><strong>Estado:</strong> {{ order.status }}</p>
+<div class="admin-order-detail admin-fade-in" *ngIf="!loading && order">
+  <app-admin-page-header
+    [title]="'Pedido ' + (order.orderNumber || order.id)"
+    [breadcrumb]="[
+      {label:'Admin', link:'/admin/dashboard'},
+      {label:'Pedidos', link:'/admin/orders'},
+      {label: order.orderNumber || 'Detalle'}
+    ]"
+  >
+    <app-admin-button variant="secondary" routerLink="/admin/orders">
+      <i class="fa-solid fa-arrow-left"></i> Volver
+    </app-admin-button>
+  </app-admin-page-header>
 
-    <div class="actions">
-      <label>Cambiar estado:</label>
-      <select #statusSel (change)="setStatus(statusSel.value)">
-        <option value="pending">pending</option>
-        <option value="processing">processing</option>
-        <option value="shipped">shipped</option>
-        <option value="delivered">delivered</option>
-        <option value="cancelled">cancelled</option>
-      </select>
+  <div class="order-grid">
+    <!-- ─── Left Column: Items ──────────────────────────────── -->
+    <div class="order-main">
+      <!-- Order Items -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h3><i class="fa-solid fa-box"></i> Artículos</h3>
+          <span class="items-count">{{ order.items.length || 0 }} producto(s)</span>
+        </div>
+
+        <div class="items-list" *ngIf="order.items && order.items.length > 0">
+          <div class="item-row" *ngFor="let item of order.items">
+            <div class="item-image">
+              <img *ngIf="item.imageUrl" [src]="item.imageUrl" [alt]="item.productName" />
+              <i *ngIf="!item.imageUrl" class="fa-solid fa-image"></i>
+            </div>
+            <div class="item-info">
+              <div class="item-name">{{ item.productName }}</div>
+              <div class="item-meta">
+                <span *ngIf="item.colorName">{{ item.colorName }}</span>
+                <span *ngIf="item.sizeName"> · {{ item.sizeName }}</span>
+                <span *ngIf="item.variantSku"> · SKU: {{ item.variantSku }}</span>
+              </div>
+            </div>
+            <div class="item-qty">
+              <span class="qty-label">Cant.</span>
+              <span class="qty-value">{{ item.quantity }}</span>
+            </div>
+            <div class="item-price">
+              <span class="price-unit">S/. {{ item.unitPrice | number: '1.2-2' }}</span>
+              <span class="price-subtotal">S/. {{ item.subtotal | number: '1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-items" *ngIf="!order.items || order.items.length === 0">
+          <i class="fa-regular fa-folder-open"></i>
+          <span>No hay artículos registrados</span>
+        </div>
+
+        <!-- Totals -->
+        <div class="order-totals">
+          <div class="total-row">
+            <span>Subtotal</span>
+            <span>S/. {{ order.subtotal | number: '1.2-2' }}</span>
+          </div>
+          <div class="total-row" *ngIf="order.discountAmount && order.discountAmount > 0">
+            <span>Descuento</span>
+            <span class="text-danger">- S/. {{ order.discountAmount | number: '1.2-2' }}</span>
+          </div>
+          <div class="total-row" *ngIf="order.shippingCost && order.shippingCost > 0">
+            <span>Envío</span>
+            <span>S/. {{ order.shippingCost | number: '1.2-2' }}</span>
+          </div>
+          <div class="total-row total-final">
+            <span>Total</span>
+            <span>S/. {{ order.total | number: '1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="admin-card" *ngIf="order.notes">
+        <div class="admin-card-header">
+          <h3><i class="fa-solid fa-sticky-note"></i> Notas</h3>
+        </div>
+        <p class="notes-text">{{ order.notes }}</p>
+      </div>
     </div>
 
-    <h3>Items</h3>
-    <ul>
-      <li *ngFor="let it of order.items">
-        {{ it.variantId }} x {{ it.quantity }} - {{ it.unitPrice | number: '1.2-2' }}
-      </li>
-    </ul>
+    <!-- ─── Right Column: Info & Actions ────────────────────── -->
+    <div class="order-sidebar">
+      <!-- Status Card -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h3><i class="fa-solid fa-tag"></i> Estado</h3>
+        </div>
+        <div class="status-display">
+          <app-admin-badge [variant]="getStatusBadge(order.status)" [label]="getStatusLabel(order.status)">
+          </app-admin-badge>
+        </div>
+
+        <div class="status-actions" *ngIf="order.status !== 'cancelled'">
+          <label class="admin-label">Cambiar estado a</label>
+          <select
+            class="admin-select"
+            #statusSel
+            [disabled]="updatingStatus"
+          >
+            <option value="" disabled selected>Seleccionar estado</option>
+            <option *ngFor="let s of statusOptions" [value]="s.value" [disabled]="s.value === order.status">
+              {{ s.label }}
+            </option>
+          </select>
+          <app-admin-button
+            variant="primary"
+            [disabled]="updatingStatus || !statusSel.value"
+            (click)="updateStatus(statusSel.value)"
+          >
+            <i *ngIf="updatingStatus" class="fa-solid fa-spinner fa-spin"></i>
+            {{ updatingStatus ? 'Actualizando...' : 'Actualizar estado' }}
+          </app-admin-button>
+        </div>
+
+        <div class="cancel-section" *ngIf="order.status !== 'cancelled' && order.status !== 'delivered'">
+          <app-admin-button
+            variant="danger"
+            [disabled]="cancelling"
+            (click)="cancelOrder()"
+          >
+            <i *ngIf="cancelling" class="fa-solid fa-spinner fa-spin"></i>
+            {{ cancelling ? 'Cancelando...' : 'Cancelar pedido' }}
+          </app-admin-button>
+        </div>
+      </div>
+
+      <!-- Order Info Card -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h3><i class="fa-solid fa-circle-info"></i> Información</h3>
+        </div>
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-label">Número de orden</span>
+            <span class="info-value">{{ order.orderNumber }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Cliente</span>
+            <span class="info-value">{{ order.customerName || '—' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Método de pago</span>
+            <span class="info-value">{{ formatPayment(order.paymentMethod) }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Creado</span>
+            <span class="info-value">{{ formatDate(order.createdAt) }}</span>
+          </div>
+          <div class="info-row" *ngIf="order.updatedAt">
+            <span class="info-label">Última actualización</span>
+            <span class="info-value">{{ formatDate(order.updatedAt) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div class="admin-order-detail admin-fade-in" *ngIf="loading">
+  <app-admin-page-header
+    title="Cargando pedido..."
+    [breadcrumb]="[
+      {label:'Admin', link:'/admin/dashboard'},
+      {label:'Pedidos', link:'/admin/orders'},
+      {label:'Cargando...'}
+    ]"
+  ></app-admin-page-header>
+  <div class="admin-card">
+    <div class="skeleton-row" *ngFor="let r of [1,2,3]">
+      <div class="admin-skeleton admin-skeleton--line" style="width: 100%; height: 64px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Not Found State -->
+<div class="admin-order-detail admin-fade-in" *ngIf="!loading && !order">
+  <app-admin-page-header
+    title="Pedido no encontrado"
+    [breadcrumb]="[
+      {label:'Admin', link:'/admin/dashboard'},
+      {label:'Pedidos', link:'/admin/orders'},
+      {label:'No encontrado'}
+    ]"
+  ></app-admin-page-header>
+  <div class="admin-card">
+    <div class="empty-state">
+      <div class="empty-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+      <h3>No se encontró el pedido</h3>
+      <p>El pedido solicitado no existe o fue eliminado.</p>
+      <app-admin-button variant="primary" routerLink="/admin/orders" style="margin-top: 16px;">
+        <i class="fa-solid fa-arrow-left"></i> Volver a pedidos
+      </app-admin-button>
+    </div>
   </div>
 </div>

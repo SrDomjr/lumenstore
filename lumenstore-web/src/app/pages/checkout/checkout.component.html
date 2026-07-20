@@ -1,20 +1,202 @@
-<div class="checkout-container">
-  <h1>Checkout</h1>
+<div class="checkout-layout" *ngIf="cart && items.length > 0">
 
-  <div class="checkout-form">
-    <h2>Shipping Information</h2>
-    <p>Select a saved address or enter a new one</p>
+  <!-- ============ COLUMNA PRINCIPAL: FORMULARIO ============ -->
+  <div class="checkout-main">
 
-    <h2 style="margin-top: 30px">Payment Method</h2>
-    <div>
-      <label *ngFor="let method of paymentMethods">
-        <input type="radio" [(ngModel)]="selectedPayment" [value]="method" />
-        {{ method | uppercase }}
-      </label>
+    <!-- 1. Contacto -->
+    <div class="form-section">
+      <div class="form-section-header">
+        <div class="step-number done">&#10003;</div>
+        <h2>Contacto</h2>
+      </div>
+      <div class="confirmed-block" *ngIf="user">
+        <strong>{{ user.email }}</strong> &middot; Recibirás la confirmación y el seguimiento aquí
+      </div>
     </div>
 
-    <button (click)="placeOrder()" class="btn btn-primary" style="margin-top: 30px">
-      Place Order
-    </button>
+    <!-- 2. Dirección de envío -->
+    <div class="form-section">
+      <div class="form-section-header">
+        <div class="step-number">2</div>
+        <h2>Dirección de envío</h2>
+      </div>
+
+      <div *ngIf="loadingAddresses" class="loading-addresses">
+        <span>Cargando direcciones...</span>
+      </div>
+
+      <div class="address-list" *ngIf="!loadingAddresses && addresses.length > 0">
+        <label
+          class="address-card"
+          *ngFor="let addr of addresses"
+          [class.selected]="selectedAddressId === addr.id"
+          (click)="selectAddress(addr.id)"
+        >
+          <input type="radio" name="address" [checked]="selectedAddressId === addr.id">
+          <div class="address-text">
+            <span class="tag" *ngIf="addr.isDefault">Predeterminada</span>
+            <strong>{{ addr.street }}</strong>
+            {{ formatAddress(addr) }}
+          </div>
+        </label>
+      </div>
+
+      <div class="empty-addresses" *ngIf="!loadingAddresses && addresses.length === 0">
+        <p>No tienes direcciones registradas.</p>
+        <a routerLink="/addresses" class="add-address-btn">+ Agregar nueva dirección</a>
+      </div>
+
+      <a routerLink="/addresses" class="add-address-btn" *ngIf="addresses.length > 0">
+        + Agregar nueva dirección
+      </a>
+    </div>
+
+    <!-- 3. Método de envío -->
+    <div class="form-section">
+      <div class="form-section-header">
+        <div class="step-number">3</div>
+        <h2>Método de envío</h2>
+      </div>
+      <div class="shipping-options">
+        <label
+          class="shipping-option"
+          *ngFor="let opt of shippingOptions"
+          [class.selected]="shippingMethod === opt.value"
+          (click)="selectShipping(opt.value)"
+        >
+          <input type="radio" name="shipping" [checked]="shippingMethod === opt.value">
+          <div class="shipping-option-info">
+            <div class="shipping-option-name">{{ opt.label }}</div>
+            <div class="shipping-option-time">{{ opt.time }}</div>
+          </div>
+          <div class="shipping-option-price">S/ {{ opt.price | number: '1.2-2' }}</div>
+        </label>
+      </div>
+    </div>
+
+    <!-- 4. Método de pago -->
+    <div class="form-section">
+      <div class="form-section-header">
+        <div class="step-number">4</div>
+        <h2>Método de pago</h2>
+      </div>
+      <div class="payment-options">
+        <div
+          class="payment-option"
+          *ngFor="let pm of paymentMethods"
+          [class.selected]="paymentMethod === pm.value"
+          (click)="selectPayment(pm.value)"
+        >
+          <div class="payment-option-top">
+            <input type="radio" name="payment" [checked]="paymentMethod === pm.value">
+            <span class="payment-option-name">{{ pm.label }}</span>
+          </div>
+
+          <!-- Card form -->
+          <div class="card-form" *ngIf="pm.value === 'card' && paymentMethod === 'card'">
+            <div class="field">
+              <label>Número de tarjeta</label>
+              <input type="text" placeholder="1234 1234 1234 1234" [(ngModel)]="cardNumber" maxlength="19">
+            </div>
+            <div class="card-form-row">
+              <div class="field">
+                <label>Vencimiento</label>
+                <input type="text" placeholder="MM/AA" [(ngModel)]="cardExpiry" maxlength="5">
+              </div>
+              <div class="field">
+                <label>CVV</label>
+                <input type="text" placeholder="123" [(ngModel)]="cardCvv" maxlength="4">
+              </div>
+            </div>
+            <div class="field">
+              <label>Nombre en la tarjeta</label>
+              <input type="text" placeholder="Nombre como aparece en la tarjeta" [(ngModel)]="cardName">
+            </div>
+          </div>
+
+          <!-- Yape info -->
+          <div class="payment-info" *ngIf="pm.value === 'yape' && paymentMethod === 'yape'">
+            <p>Se te mostrará el número de Yape para completar el pago después de confirmar el pedido.</p>
+          </div>
+
+          <!-- Plin info -->
+          <div class="payment-info" *ngIf="pm.value === 'plin' && paymentMethod === 'plin'">
+            <p>Se te mostrará el número de Plin para completar el pago después de confirmar el pedido.</p>
+          </div>
+
+          <!-- Transfer info -->
+          <div class="payment-info" *ngIf="pm.value === 'transfer' && paymentMethod === 'transfer'">
+            <p>Recibirás los datos de la cuenta bancaria para realizar la transferencia.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Notas del pedido -->
+    <div class="form-section order-notes">
+      <div class="form-section-header">
+        <h2>Notas del pedido <span class="optional">(opcional)</span></h2>
+      </div>
+      <textarea
+        placeholder="Ej: Dejar el pedido con el guardián / Tocar el timbre 2 veces"
+        [(ngModel)]="orderNotes"
+      ></textarea>
+    </div>
+
   </div>
+
+  <!-- ============ COLUMNA RESUMEN ============ -->
+  <div class="checkout-summary-col">
+    <div class="summary-sticky">
+
+      <div class="summary-products">
+        <div class="summary-product-row" *ngFor="let item of items; trackBy: trackById">
+          <div class="summary-thumb">
+            <img [src]="item.imageUrl || 'https://via.placeholder.com/112x140?text=Producto'" [alt]="item.productName">
+            <span class="qty-badge">{{ item.quantity }}</span>
+          </div>
+          <div class="summary-product-info">
+            <div class="summary-product-name">{{ item.productName }}</div>
+            <div class="summary-product-variant" *ngIf="getVariantLabel(item)">{{ getVariantLabel(item) }}</div>
+          </div>
+          <div class="summary-product-price">S/ {{ item.quantity * item.price | number: '1.2-2' }}</div>
+        </div>
+      </div>
+
+      <div class="summary-totals">
+        <div class="summary-row">
+          <span>Subtotal</span>
+          <span>S/ {{ subtotal | number: '1.2-2' }}</span>
+        </div>
+        <div class="summary-row discount" *ngIf="discountAmount > 0">
+          <span>Descuento</span>
+          <span>&minus; S/ {{ discountAmount | number: '1.2-2' }}</span>
+        </div>
+        <div class="summary-row">
+          <span>Envío</span>
+          <span>S/ {{ shippingCost | number: '1.2-2' }}</span>
+        </div>
+        <div class="summary-row total">
+          <span>Total</span>
+          <span>S/ {{ total | number: '1.2-2' }}</span>
+        </div>
+      </div>
+
+      <button
+        class="place-order-btn"
+        [disabled]="!canSubmit"
+        (click)="placeOrder()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10" width="14" height="10" rx="1"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+        {{ submitting ? 'Procesando...' : 'Finalizar compra' }}
+      </button>
+
+      <p class="terms-note">
+        Al finalizar tu compra aceptas nuestros
+        <a routerLink="/terms">Términos y condiciones</a> y
+        <a routerLink="/privacy">Política de privacidad</a>
+      </p>
+    </div>
+  </div>
+
 </div>

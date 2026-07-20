@@ -74,4 +74,8 @@ export class HomeComponent implements OnInit {
     const fallbackUrl = `https://via.placeholder.com/${size}x${size}?text=${fallbackText}`;
     return product.images?.length ? product.images[0] : fallbackUrl;
   }
+
+  trackByProductId(_index: number, product: Producto): number {
+    return product.id;
+  }
 }

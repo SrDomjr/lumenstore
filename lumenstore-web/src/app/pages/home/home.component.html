@@ -43,11 +43,12 @@
     </div>
 
     <div class="featured-grid">
-      <article *ngFor="let product of trendingProducts" class="featured-card">
+      <article *ngFor="let product of trendingProducts; trackBy: trackByProductId" class="featured-card">
         <div class="image-wrap">
           <img
             [src]="getProductImage(product, 520) | cloudinaryUrl: 520 : 'thumb'"
             [alt]="product.name"
+            loading="lazy"
           />
         </div>
         <div class="featured-copy">
@@ -70,11 +71,12 @@
     </div>
 
     <div class="products-grid">
-      <div *ngFor="let product of newProducts" class="product-card">
+      <div *ngFor="let product of newProducts; trackBy: trackByProductId" class="product-card">
         <div class="product-image">
           <img
             [src]="getProductImage(product, 400) | cloudinaryUrl: 400 : 'thumb'"
             [alt]="product.name"
+            loading="lazy"
           />
         </div>
         <div class="product-info">
@@ -109,11 +111,12 @@
     </div>
 
     <div class="products-grid">
-      <div *ngFor="let product of discountedProducts" class="product-card">
+      <div *ngFor="let product of discountedProducts; trackBy: trackByProductId" class="product-card">
         <div class="product-image">
           <img
             [src]="getProductImage(product, 400) | cloudinaryUrl: 400 : 'thumb'"
             [alt]="product.name"
+            loading="lazy"
           />
           <span *ngIf="product.discount > 0" class="discount-badge">-{{ product.discount }}%</span>
         </div>

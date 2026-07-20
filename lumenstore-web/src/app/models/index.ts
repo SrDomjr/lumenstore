@@ -269,8 +269,10 @@ export interface SaleResponseDTO {
   total: number;
   paymentMethod: string;
   customerName: string;
-  items: SaleDetail[];
+  notes: string;
+  items: SaleDetailResponseDTO[];
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface SaleRequestDTO {
@@ -293,6 +295,21 @@ export interface SaleDetail {
   id: number;
   saleId: number;
   variantId: number;
+  quantity: number;
+  unitPrice: number;
+  discountAmount: number;
+  subtotal: number;
+}
+
+export interface SaleDetailResponseDTO {
+  id: number;
+  saleId: number;
+  variantId: number;
+  productName: string;
+  variantSku: string;
+  colorName: string;
+  sizeName: string;
+  imageUrl: string;
   quantity: number;
   unitPrice: number;
   discountAmount: number;

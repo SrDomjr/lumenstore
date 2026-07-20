@@ -91,7 +91,7 @@
         </thead>
         <tbody>
           <tr
-            *ngFor="let p of pagedProducts"
+            *ngFor="let p of pagedProducts; trackBy: trackByProductId"
             [class.row-inactive]="!p.isActive"
             [class.row-selected]="isSelected(p.id)"
           >
@@ -142,7 +142,7 @@
         </div>
         <div class="pagination-controls">
           <select class="admin-select page-size" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
-            <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }} por página</option>
+            <option *ngFor="let opt of pageSizeOptions; trackBy: trackByIndex" [value]="opt">{{ opt }} por página</option>
           </select>
           <div class="page-nav">
             <button class="admin-btn secondary icon-only" [disabled]="currentPage === 0" (click)="goToPage(currentPage - 1)">

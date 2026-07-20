@@ -259,4 +259,12 @@ export class StoreComponent implements OnInit {
       this.loadProducts();
     }
   }
+
+  trackByProductId(_index: number, product: any): any {
+    return product.id;
+  }
+
+  trackById(_index: number, item: any): any {
+    return item.id;
+  }
 }

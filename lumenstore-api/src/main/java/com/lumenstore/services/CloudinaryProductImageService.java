@@ -3,6 +3,7 @@ package com.lumenstore.services;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.lumenstore.dto.ProductImageResponseDTO;
+import com.lumenstore.exception.BusinessRuleException;
 import com.lumenstore.exception.FileStorageException;
 import com.lumenstore.exception.ResourceNotFoundException;
 import com.lumenstore.models.ProductImage;
@@ -123,6 +124,9 @@ public class CloudinaryProductImageService implements IProductImageService {
         } catch (IOException e) {
             throw new FileStorageException(
                     "No se pudo subir la imagen '" + file.getOriginalFilename() + "' a Cloudinary.", e);
+        } catch (RuntimeException e) {
+            throw new FileStorageException(
+                    "Error del servicio de imágenes: " + e.getMessage(), e);
         }
 
         // 6. Gestionar imagen principal
@@ -259,14 +263,14 @@ public class CloudinaryProductImageService implements IProductImageService {
 
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("El archivo enviado está vacío.");
+            throw new BusinessRuleException("El archivo enviado está vacío.");
         }
         if (file.getSize() > MAX_FILE_SIZE_BYTES) {
-            throw new IllegalArgumentException("El archivo supera el tamaño máximo permitido (10 MB).");
+            throw new BusinessRuleException("El archivo supera el tamaño máximo permitido (10 MB).");
         }
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
-            throw new IllegalArgumentException(
+            throw new BusinessRuleException(
                     "Tipo de archivo no permitido. Formatos aceptados: " + ALLOWED_CONTENT_TYPES);
         }
     }

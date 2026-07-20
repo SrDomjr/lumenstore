@@ -1,60 +1,141 @@
-<div class="admin-orders container">
-  <h1>Pedidos</h1>
-  <div class="filters">
-    <input type="text" placeholder="Buscar por número o cliente" [(ngModel)]="searchTerm" />
-    <select [(ngModel)]="statusFilter">
-      <option value="all">Todos</option>
-      <option value="pending">pending</option>
-      <option value="processing">processing</option>
-      <option value="shipped">shipped</option>
-      <option value="delivered">delivered</option>
-      <option value="cancelled">cancelled</option>
-    </select>
-    <label>Desde <input type="date" [(ngModel)]="startDate" /></label>
-    <label>Hasta <input type="date" [(ngModel)]="endDate" /></label>
-    <button class="btn btn-secondary" (click)="applyFilters()">Aplicar</button>
+<div class="admin-orders admin-fade-in">
+  <app-admin-page-header
+    title="Pedidos"
+    [breadcrumb]="[
+      {label:'Admin', link:'/admin/dashboard'},
+      {label:'Pedidos'}
+    ]"
+  >
+    <app-admin-button variant="secondary">
+      <i class="fa-solid fa-download"></i> Exportar
+    </app-admin-button>
+  </app-admin-page-header>
+
+  <div *ngIf="loading" class="loading-panel">
+    <div class="admin-card">
+      <div class="skeleton-row" *ngFor="let r of [1,2,3,4,5]">
+        <div class="admin-skeleton admin-skeleton--line" style="width: 100%; height: 48px;"></div>
+      </div>
+    </div>
   </div>
 
-  <div *ngIf="loading">Cargando...</div>
-  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+  <div *ngIf="error && !loading" class="alert alert-danger">{{ error }}</div>
 
-  <table *ngIf="!loading && orders.length" class="orders-table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Orden</th>
-        <th>Cliente</th>
-        <th>Total</th>
-        <th>Estado</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let o of orders">
-        <td>{{ o.id }}</td>
-        <td>{{ o.orderNumber }}</td>
-        <td>{{ o.customerName || o.clienteName }}</td>
-        <td>{{ o.total | number: '1.2-2' }}</td>
-        <td>{{ o.status }}</td>
-        <td class="actions">
-          <button class="btn" (click)="view(o.id)">Ver</button>
-          <select #statusSelect (change)="changeStatus(o.id, statusSelect.value)">
-            <option value="pending">pending</option>
-            <option value="processing">processing</option>
-            <option value="shipped">shipped</option>
-            <option value="delivered">delivered</option>
-            <option value="cancelled">cancelled</option>
-          </select>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div *ngIf="!loading && !error" class="admin-card">
+    <!-- ─── Search & Filters Bar ─────────────────────────────── -->
+    <div class="filters-bar">
+      <div class="search-field">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input
+          type="text"
+          placeholder="Buscar por número o cliente..."
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="onSearchChange()"
+          class="admin-input search-input"
+        />
+      </div>
 
-  <div *ngIf="!loading && !orders.length">No hay pedidos.</div>
+      <div class="filter-actions">
+        <select class="admin-select status-select" [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
+          <option value="all">Todos los estados</option>
+          <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</option>
+        </select>
 
-  <div class="pagination" *ngIf="!loading">
-    <button class="btn" (click)="prevPage()" [disabled]="page === 0">Anterior</button>
-    <span> Página {{ page + 1 }} </span>
-    <button class="btn" (click)="nextPage()">Siguiente</button>
+        <div class="date-range">
+          <label class="filter-label">Desde</label>
+          <input type="date" class="admin-input date-input" [(ngModel)]="startDate" />
+        </div>
+        <div class="date-range">
+          <label class="filter-label">Hasta</label>
+          <input type="date" class="admin-input date-input" [(ngModel)]="endDate" />
+        </div>
+
+        <button class="admin-btn secondary" (click)="applyFilters()">
+          <i class="fa-solid fa-filter"></i> Filtrar
+        </button>
+
+        <button
+          *ngIf="searchTerm || statusFilter !== 'all' || startDate || endDate"
+          class="admin-btn ghost"
+          (click)="clearFilters()"
+        >
+          Limpiar
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── Table ───────────────────────────────────────────── -->
+    <div class="table-wrap" *ngIf="orders.length > 0">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Orden</th>
+            <th>Cliente</th>
+            <th>Método de pago</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let o of orders; trackBy: trackByOrderId">
+            <td class="cell-order">
+              <span class="order-number">{{ o.orderNumber }}</span>
+            </td>
+            <td class="cell-customer">
+              <span class="customer-name">{{ o.customerName || '—' }}</span>
+            </td>
+            <td class="cell-payment">
+              {{ formatPayment(o.paymentMethod) }}
+            </td>
+            <td class="cell-total">
+              S/. {{ o.total | number: '1.2-2' }}
+            </td>
+            <td class="cell-status">
+              <app-admin-badge [variant]="getStatusBadge(o.status)">
+                {{ getStatusLabel(o.status) }}
+              </app-admin-badge>
+            </td>
+            <td class="cell-date">
+              {{ formatDate(o.createdAt) }}
+            </td>
+            <td class="cell-actions">
+              <button class="icon-btn" (click)="view(o.id)" title="Ver detalle">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ─── Pagination ────────────────────────────────────── -->
+      <div class="pagination-bar">
+        <div class="pagination-info">
+          Página {{ page + 1 }} de {{ totalPages }} ({{ totalElements }} pedidos)
+        </div>
+        <div class="pagination-controls">
+          <div class="page-nav">
+            <button class="admin-btn secondary icon-only" [disabled]="page === 0" (click)="prevPage()">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button class="admin-btn secondary icon-only" [disabled]="page >= totalPages - 1" (click)="nextPage()">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="!loading && !error && orders.length === 0" class="empty-state">
+      <div class="empty-icon"><i class="fa-solid fa-receipt"></i></div>
+      <h3>No hay pedidos</h3>
+      <p *ngIf="searchTerm || statusFilter !== 'all' || startDate || endDate">
+        No se encontraron pedidos que coincidan con los filtros aplicados.
+      </p>
+      <p *ngIf="!searchTerm && statusFilter === 'all' && !startDate && !endDate">
+        Aún no se han registrado pedidos en la tienda.
+      </p>
+    </div>
   </div>
 </div>

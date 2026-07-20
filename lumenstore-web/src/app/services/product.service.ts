@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, shareReplay } from 'rxjs';
 import { ApiService } from './api.service';
 import {
   Producto,
@@ -16,6 +16,9 @@ import {
   providedIn: 'root',
 })
 export class ProductService extends ApiService {
+  private brandsCache$: Observable<Marca[]> | null = null;
+  private categoriesCache$: Observable<Categoria[]> | null = null;
+
   getProducts(filters: any = {}, page: number = 0, size: number = 10): Observable<any> {
     const params: string[] = [];
     if (filters.categoryId) {
@@ -85,7 +88,6 @@ export class ProductService extends ApiService {
   }
 
   getProductsByBrand(brandId: number): Observable<any> {
-    // No dedicated brand endpoint exists; use the filter endpoint
     return this.get<any>(`/products?brandId=${brandId}&page=0&size=12`);
   }
 
@@ -93,18 +95,24 @@ export class ProductService extends ApiService {
     return this.get<any>(`/products?q=${encodeURIComponent(query)}&page=0&size=12`);
   }
 
-  // Brands
+  // Brands (cached — reference data that rarely changes)
   getBrands(): Observable<Marca[]> {
-    return this.get<Marca[]>(`/brands`);
+    if (!this.brandsCache$) {
+      this.brandsCache$ = this.get<Marca[]>(`/brands`).pipe(shareReplay(1));
+    }
+    return this.brandsCache$;
   }
 
   getBrandById(id: number): Observable<Marca> {
     return this.get<Marca>(`/brands/${id}`);
   }
 
-  // Categories
+  // Categories (cached — reference data that rarely changes)
   getCategories(): Observable<Categoria[]> {
-    return this.get<Categoria[]>(`/categories`);
+    if (!this.categoriesCache$) {
+      this.categoriesCache$ = this.get<Categoria[]>(`/categories`).pipe(shareReplay(1));
+    }
+    return this.categoriesCache$;
   }
 
   getCategoryById(id: number): Observable<Categoria> {
@@ -134,9 +142,6 @@ export class ProductService extends ApiService {
     if (filters.categoryId) params.push(`categoryId=${filters.categoryId}`);
     if (filters.brandId) params.push(`brandId=${filters.brandId}`);
     if (filters.query) params.push(`q=${encodeURIComponent(filters.query)}`);
-    // Antes este filtro se armaba en el componente pero nunca se enviaba al
-    // backend, así que "Solo activos" / "Solo inactivos" no tenía ningún
-    // efecto real en el listado.
     if (filters.isActive != null) params.push(`isActive=${filters.isActive}`);
     params.push(`page=${page}`);
     params.push(`size=${size}`);

@@ -76,11 +76,11 @@
           <a routerLink="/admin/sales" class="card-link">Ver todos</a>
         </div>
 
-        <div *ngIf="!stats.recentOrders?.length" class="card-empty">
+        <div *ngIf="!stats.recentOrders.length" class="card-empty">
           <p class="admin-text-muted">No hay pedidos recientes.</p>
         </div>
 
-        <div class="orders-list" *ngIf="stats.recentOrders?.length">
+        <div class="orders-list" *ngIf="stats.recentOrders.length">
           <div class="order-row" *ngFor="let order of stats.recentOrders">
             <div class="order-main">
               <span class="order-number">#{{ order.orderNumber }}</span>
@@ -105,14 +105,14 @@
             <i class="fa-solid fa-triangle-exclamation" style="color: var(--admin-gold); margin-right: 6px;"></i>
             Alertas de stock
           </h3>
-          <span class="card-count" *ngIf="stats.stockAlerts?.length">{{ stats.stockAlerts.length }}</span>
+          <span class="card-count" *ngIf="stats.stockAlerts.length">{{ stats.stockAlerts.length }}</span>
         </div>
 
-        <div *ngIf="!stats.stockAlerts?.length" class="card-empty">
+        <div *ngIf="!stats.stockAlerts.length" class="card-empty">
           <p class="admin-text-muted">No hay alertas de stock activas.</p>
         </div>
 
-        <div class="alerts-list" *ngIf="stats.stockAlerts?.length">
+        <div class="alerts-list" *ngIf="stats.stockAlerts.length">
           <div class="alert-row" *ngFor="let alert of stats.stockAlerts">
             <div class="alert-info">
               <span class="alert-product">{{ alert.productName }}</span>
@@ -139,14 +139,14 @@
             <i class="fa-regular fa-star" style="color: var(--admin-gold); margin-right: 6px;"></i>
             Reseñas por moderar
           </h3>
-          <span class="card-count" *ngIf="stats.pendingReviews?.length">{{ stats.pendingReviews.length }}</span>
+          <span class="card-count" *ngIf="stats.pendingReviews.length">{{ stats.pendingReviews.length }}</span>
         </div>
 
-        <div *ngIf="!stats.pendingReviews?.length" class="card-empty">
+        <div *ngIf="!stats.pendingReviews.length" class="card-empty">
           <p class="admin-text-muted">No hay reseñas pendientes.</p>
         </div>
 
-        <div class="reviews-list" *ngIf="stats.pendingReviews?.length">
+        <div class="reviews-list" *ngIf="stats.pendingReviews.length">
           <div class="review-row" *ngFor="let review of stats.pendingReviews">
             <div class="review-main">
               <span class="review-product">{{ review.productName }}</span>

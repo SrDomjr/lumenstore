@@ -2,6 +2,7 @@ package com.lumenstore.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,21 +15,34 @@ import com.lumenstore.models.Producto;
 @Repository
 public interface IProductoRepository extends JpaRepository<Producto, Long> {
 
-    // Paginación automática: Fundamental para no saturar la app si hay miles de productos
+    @EntityGraph(attributePaths = {
+        "brand", "category",
+        "variants", "variants.size", "variants.color",
+        "discounts"
+    })
     Page<Producto> findByIsActiveTrue(Pageable pageable);
-    
-    // Filtrar productos por categoría usando paginación
+
+    @EntityGraph(attributePaths = {
+        "brand", "category",
+        "variants", "variants.size", "variants.color",
+        "discounts"
+    })
     Page<Producto> findByCategoryIdAndIsActiveTrue(Long categoryId, Pageable pageable);
 
     @Query("SELECT DISTINCT p FROM Producto p " +
-           "LEFT JOIN p.variants v " +
+           "LEFT JOIN FETCH p.brand " +
+           "LEFT JOIN FETCH p.category " +
+           "LEFT JOIN FETCH p.variants v " +
+           "LEFT JOIN FETCH v.size " +
+           "LEFT JOIN FETCH v.color " +
+           "LEFT JOIN FETCH p.discounts " +
            "WHERE p.isActive = true " +
            "AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
            "AND (:brandId IS NULL OR p.brand.id = :brandId) " +
            "AND (:query IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) " +
            "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :query, '%'))) " +
-           "AND (:minPrice IS NULL OR v.price >= :minPrice) " +
-           "AND (:maxPrice IS NULL OR v.price <= :maxPrice)")
+           "AND (:minPrice IS NULL OR EXISTS (SELECT 1 FROM ProductVariant pv WHERE pv.product = p AND pv.price >= :minPrice)) " +
+           "AND (:maxPrice IS NULL OR EXISTS (SELECT 1 FROM ProductVariant pv WHERE pv.product = p AND pv.price <= :maxPrice))")
     Page<Producto> findByFilters(
             @Param("categoryId") Long categoryId,
             @Param("brandId") Long brandId,
@@ -37,9 +51,11 @@ public interface IProductoRepository extends JpaRepository<Producto, Long> {
             @Param("maxPrice") BigDecimal maxPrice,
             Pageable pageable);
 
-    // Admin: mostrar TODOS los productos (sin filtrar por isActive) salvo que
-    // se pida explícitamente un estado concreto vía el parámetro isActive.
     @Query("SELECT DISTINCT p FROM Producto p " +
+           "LEFT JOIN FETCH p.brand " +
+           "LEFT JOIN FETCH p.category " +
+           "LEFT JOIN FETCH p.variants " +
+           "LEFT JOIN FETCH p.discounts " +
            "WHERE (:categoryId IS NULL OR p.category.id = :categoryId) " +
            "AND (:brandId IS NULL OR p.brand.id = :brandId) " +
            "AND (:isActive IS NULL OR p.isActive = :isActive) " +
@@ -52,13 +68,25 @@ public interface IProductoRepository extends JpaRepository<Producto, Long> {
             @Param("isActive") Boolean isActive,
             Pageable pageable);
 
-    // Productos destacados
+    @EntityGraph(attributePaths = {
+        "brand", "category",
+        "variants", "variants.size", "variants.color",
+        "discounts"
+    })
     List<Producto> findTop12ByIsActiveTrueAndFeaturedTrueOrderByCreatedAtDesc();
 
-    // Nuevos productos basados en fecha de creación
+    @EntityGraph(attributePaths = {
+        "brand", "category",
+        "variants", "variants.size", "variants.color",
+        "discounts"
+    })
     List<Producto> findTop12ByIsActiveTrueOrderByCreatedAtDesc();
 
-    // Productos con descuento
+    @EntityGraph(attributePaths = {
+        "brand", "category",
+        "variants", "variants.size", "variants.color",
+        "discounts"
+    })
     List<Producto> findDistinctByIsActiveTrueAndDiscountsIsNotEmpty(Pageable pageable);
     
     Optional<Producto> findBySlug(String slug);
@@ -66,8 +94,6 @@ public interface IProductoRepository extends JpaRepository<Producto, Long> {
     long countByCategoryIdAndIsActiveTrue(Long categoryId);
 
     long countByBrandIdAndIsActiveTrue(Long brandId);
-
-    // ─── Reglas de unicidad de negocio (slug y SKU son únicos por producto) ───
 
     boolean existsBySlugIgnoreCase(String slug);
 

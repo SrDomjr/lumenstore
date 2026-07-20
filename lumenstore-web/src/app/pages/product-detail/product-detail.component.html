@@ -350,7 +350,7 @@
         [routerLink]="['/store', rp.slug]"
       >
         <div class="pd-rel-card__img">
-          <img [src]="rp.images?.[0] | cloudinaryUrl: 300 : 'thumb'" [alt]="rp.name" loading="lazy">
+          <img [src]="rp.images[0] | cloudinaryUrl: 300 : 'thumb'" [alt]="rp.name" loading="lazy">
         </div>
         <div class="pd-rel-card__info">
           <span class="pd-rel-card__brand">{{ rp.brandName }}</span>

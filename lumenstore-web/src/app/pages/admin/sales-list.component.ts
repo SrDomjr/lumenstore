@@ -7,9 +7,7 @@ import { ISale, SaleStatus, SALE_STATUS_CONFIG, SALE_STATUS_TRANSITIONS } from '
 import { MOCK_SALES } from '../../models/sales.mock';
 import { AdminPageHeaderComponent } from '../../components/admin/admin-page-header.component';
 import { AdminButtonComponent } from '../../components/admin/admin-button.component';
-import { AdminBadgeComponent } from '../../components/admin/admin-badge.component';
-import { AdminEmptyStateComponent } from '../../components/admin/admin-empty-state.component';
-import { AdminSkeletonComponent } from '../../components/admin/admin-skeleton.component';
+
 
 @Component({
   selector: 'app-admin-sales-list',
@@ -20,9 +18,6 @@ import { AdminSkeletonComponent } from '../../components/admin/admin-skeleton.co
     FormsModule,
     AdminPageHeaderComponent,
     AdminButtonComponent,
-    AdminBadgeComponent,
-    AdminEmptyStateComponent,
-    AdminSkeletonComponent,
   ],
   templateUrl: './sales-list.component.html',
   styleUrls: ['./sales-list.component.scss'],

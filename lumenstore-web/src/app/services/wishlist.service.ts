@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, shareReplay, tap } from 'rxjs';
 import { ApiService } from './api.service';
 import { Wishlist, WishlistResponseDTO, WishlistRequestDTO, WishlistItem } from '../models';
 
@@ -7,6 +7,9 @@ import { Wishlist, WishlistResponseDTO, WishlistRequestDTO, WishlistItem } from 
   providedIn: 'root',
 })
 export class WishlistService extends ApiService {
+  private defaultWishlistCache = new Map<number, Observable<WishlistResponseDTO>>();
+  private wishlistProductCache = new Map<string, Observable<boolean>>();
+
   createWishlist(
     customerId: number,
     wishlist: WishlistRequestDTO,
@@ -63,7 +66,17 @@ export class WishlistService extends ApiService {
   }
 
   getDefaultWishlist(customerId: number): Observable<WishlistResponseDTO> {
-    return this.get<WishlistResponseDTO>(`/customers/${customerId}/wishlists/default`);
+    if (!this.defaultWishlistCache.has(customerId)) {
+      const req$ = this.get<WishlistResponseDTO>(
+        `/customers/${customerId}/wishlists/default`,
+      ).pipe(shareReplay(1));
+      this.defaultWishlistCache.set(customerId, req$);
+    }
+    return this.defaultWishlistCache.get(customerId)!;
+  }
+
+  invalidateDefaultWishlist(customerId: number): void {
+    this.defaultWishlistCache.delete(customerId);
   }
 
   isProductInWishlist(
@@ -71,8 +84,25 @@ export class WishlistService extends ApiService {
     wishlistId: number,
     productId: number,
   ): Observable<boolean> {
-    return this.get<boolean>(
-      `/customers/${customerId}/wishlists/${wishlistId}/products/${productId}/exists`,
-    );
+    const key = `${wishlistId}:${productId}`;
+    if (!this.wishlistProductCache.has(key)) {
+      const req$ = this.get<boolean>(
+        `/customers/${customerId}/wishlists/${wishlistId}/products/${productId}/exists`,
+      ).pipe(shareReplay(1));
+      this.wishlistProductCache.set(key, req$);
+    }
+    return this.wishlistProductCache.get(key)!;
+  }
+
+  invalidateWishlistProduct(wishlistId: number, productId?: number): void {
+    if (productId != null) {
+      this.wishlistProductCache.delete(`${wishlistId}:${productId}`);
+    } else {
+      for (const key of this.wishlistProductCache.keys()) {
+        if (key.startsWith(`${wishlistId}:`)) {
+          this.wishlistProductCache.delete(key);
+        }
+      }
+    }
   }
 }

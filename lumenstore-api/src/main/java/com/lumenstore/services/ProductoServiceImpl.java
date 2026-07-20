@@ -63,29 +63,33 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     @Transactional(readOnly = true)
     public Page<ProductoResponseDTO> getProducts(Pageable pageable) {
-        return productoRepository.findByIsActiveTrue(pageable)
-                .map(this::convertToDTO);
+        Page<Producto> page = productoRepository.findByIsActiveTrue(pageable);
+        Map<Long, List<String>> imagesByProduct = batchLoadImages(page.getContent());
+        return page.map(p -> convertToDTO(p, imagesByProduct));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ProductoResponseDTO> getProducts(Pageable pageable, Long categoryId, Long brandId, String query, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice) {
-        return productoRepository.findByFilters(categoryId, brandId, query, minPrice, maxPrice, pageable)
-                .map(this::convertToDTO);
+        Page<Producto> page = productoRepository.findByFilters(categoryId, brandId, query, minPrice, maxPrice, pageable);
+        Map<Long, List<String>> imagesByProduct = batchLoadImages(page.getContent());
+        return page.map(p -> convertToDTO(p, imagesByProduct));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ProductoResponseDTO> getAdminProducts(Pageable pageable, Long categoryId, Long brandId, String query) {
-        return productoRepository.findByFiltersAdmin(categoryId, brandId, query, null, pageable)
-                .map(this::convertToDTO);
+        Page<Producto> page = productoRepository.findByFiltersAdmin(categoryId, brandId, query, null, pageable);
+        Map<Long, List<String>> imagesByProduct = batchLoadImages(page.getContent());
+        return page.map(p -> convertToDTO(p, imagesByProduct));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ProductoResponseDTO> getProductsByCategory(Long categoryId, Pageable pageable) {
-        return productoRepository.findByCategoryIdAndIsActiveTrue(categoryId, pageable)
-                .map(this::convertToDTO);
+        Page<Producto> page = productoRepository.findByCategoryIdAndIsActiveTrue(categoryId, pageable);
+        Map<Long, List<String>> imagesByProduct = batchLoadImages(page.getContent());
+        return page.map(p -> convertToDTO(p, imagesByProduct));
     }
 
     @Override
@@ -107,28 +111,25 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductoResponseDTO> getTrendingProducts() {
-        return productoRepository.findTop12ByIsActiveTrueAndFeaturedTrueOrderByCreatedAtDesc()
-                .stream()
-                .map(this::convertToDTO)
-                .toList();
+        List<Producto> products = productoRepository.findTop12ByIsActiveTrueAndFeaturedTrueOrderByCreatedAtDesc();
+        Map<Long, List<String>> imagesByProduct = batchLoadImages(products);
+        return products.stream().map(p -> convertToDTO(p, imagesByProduct)).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ProductoResponseDTO> getNewProducts() {
-        return productoRepository.findTop12ByIsActiveTrueOrderByCreatedAtDesc()
-                .stream()
-                .map(this::convertToDTO)
-                .toList();
+        List<Producto> products = productoRepository.findTop12ByIsActiveTrueOrderByCreatedAtDesc();
+        Map<Long, List<String>> imagesByProduct = batchLoadImages(products);
+        return products.stream().map(p -> convertToDTO(p, imagesByProduct)).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ProductoResponseDTO> getDiscountedProducts() {
-        return productoRepository.findDistinctByIsActiveTrueAndDiscountsIsNotEmpty(Pageable.ofSize(12))
-                .stream()
-                .map(this::convertToDTO)
-                .toList();
+        List<Producto> products = productoRepository.findDistinctByIsActiveTrueAndDiscountsIsNotEmpty(Pageable.ofSize(12));
+        Map<Long, List<String>> imagesByProduct = batchLoadImages(products);
+        return products.stream().map(p -> convertToDTO(p, imagesByProduct)).toList();
     }
 
     @Override
@@ -611,6 +612,17 @@ public class ProductoServiceImpl implements ProductoService {
 
     // ─── DTO Converters ───────────────────────────────────────
 
+    private Map<Long, List<String>> batchLoadImages(List<Producto> products) {
+        if (products.isEmpty()) return Map.of();
+        List<Long> ids = products.stream().map(Producto::getId).toList();
+        return productImageRepository.findByProductIdInOrderByProductIdSortOrderAsc(ids)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        img -> img.getProduct().getId(),
+                        Collectors.mapping(ProductImage::getImageUrl, Collectors.toList())
+                ));
+    }
+
     private ProductVariantResponseDTO convertVariantToDTO(ProductVariant variant) {
         return ProductVariantResponseDTO.builder()
                 .id(variant.getId())
@@ -639,6 +651,13 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     private ProductoResponseDTO convertToDTO(Producto product) {
+        Map<Long, List<String>> singleMap = Map.of(product.getId(),
+                productImageRepository.findByProductIdOrderBySortOrderAsc(product.getId())
+                        .stream().map(ProductImage::getImageUrl).toList());
+        return convertToDTO(product, singleMap);
+    }
+
+    private ProductoResponseDTO convertToDTO(Producto product, Map<Long, List<String>> imagesByProduct) {
         BigDecimal basePrice = BigDecimal.ZERO;
         Integer stock = 0;
 
@@ -683,15 +702,7 @@ public class ProductoServiceImpl implements ProductoService {
                     .orElse(0);
         }
 
-        List<String> imageUrls = Collections.emptyList();
-        try {
-            imageUrls = productImageRepository.findByProductIdOrderBySortOrderAsc(product.getId())
-                    .stream()
-                    .map(ProductImage::getImageUrl)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.warn("Error loading images for product {}: {}", product.getId(), e.getMessage());
-        }
+        List<String> imageUrls = imagesByProduct.getOrDefault(product.getId(), Collections.emptyList());
 
         return ProductoResponseDTO.builder()
                 .id(product.getId())

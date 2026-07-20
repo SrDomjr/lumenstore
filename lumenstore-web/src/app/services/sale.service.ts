@@ -6,6 +6,7 @@ import {
   SaleResponseDTO,
   SaleRequestDTO,
   SaleDetail,
+  SaleDetailResponseDTO,
   Shipment,
   PaymentTransaction,
   Voucher,
@@ -40,8 +41,8 @@ export class SaleService extends ApiService {
   }
 
   // Sales Details
-  getSaleDetails(saleId: number): Observable<SaleDetail[]> {
-    return this.get<SaleDetail[]>(`/sales/${saleId}/details`);
+  getSaleDetails(saleId: number): Observable<SaleDetailResponseDTO[]> {
+    return this.get<SaleDetailResponseDTO[]>(`/sales/${saleId}/details`);
   }
 
   // Shipments
